@@ -14,7 +14,7 @@ class RoutineRepository @Inject constructor(
     fun getAllRoutines(): Flow<List<RoutineEntity>> =
         routineDao.getAllRoutines()
 
-    fun getRoutineById(id: Long): Flow<RoutineEntity?> =
+    fun getRoutineById(id: Int): Flow<RoutineEntity?> =
         routineDao.getRoutineById(id)
 
     suspend fun addRoutine(routine: RoutineEntity): Long =
@@ -24,7 +24,7 @@ class RoutineRepository @Inject constructor(
         routineDao.updateRoutine(routine)
     }
 
-    suspend fun deleteRoutine(id: Long) {
+    suspend fun deleteRoutine(id: Int) {
         routineDao.deleteRoutineById(id)
     }
 }

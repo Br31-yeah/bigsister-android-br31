@@ -27,7 +27,7 @@ class ReservationRepository @Inject constructor(
         reservationDao.insertReservation(reservation)
     }
 
-    suspend fun deleteReservation(id: Long) {
+    suspend fun deleteReservation(id: Int) {
         reservationDao.deleteReservationById(id)
     }
 }

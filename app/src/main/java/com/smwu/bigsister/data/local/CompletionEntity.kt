@@ -1,5 +1,6 @@
 package com.smwu.bigsister.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -9,42 +10,33 @@ import androidx.room.PrimaryKey
     tableName = "completion_table",
     foreignKeys = [
         ForeignKey(
-            entity = ReservationEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["reservationId"],
-            onDelete = ForeignKey.SET_NULL
-        ),
-        ForeignKey(
             entity = RoutineEntity::class,
             parentColumns = ["id"],
-            childColumns = ["routineId"],
-            onDelete = ForeignKey.SET_NULL
+            childColumns = ["routine_id"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
-        Index("reservationId"),
-        Index("routineId"),
-        Index("date")
+        Index("routine_id"),
+        Index("completed_at")
     ]
 )
 data class CompletionEntity(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0L,
+    @ColumnInfo(name = "id")
+    val id: Int = 0,
 
-    // 어떤 예약/루틴 실행 기록인지 (둘 중 하나만 있어도 되게 nullable)
-    val reservationId: Long? = null,
-    val routineId: Long? = null,
+    @ColumnInfo(name = "routine_id")
+    val routineId: Int,
 
-    // 실행된 날짜 (YYYY-MM-DD)
-    val date: String,
+    // 완료 시각 (timestamp)
+    @ColumnInfo(name = "completed_at")
+    val completedAt: Long,
 
-    // 예정된 시작/종료, 실제 시작/종료 – ISO 문자열 or "HH:mm"
-    val expectedStartTime: String? = null,
-    val expectedEndTime: String? = null,
-    val actualStartTime: String? = null,
-    val actualEndTime: String? = null,
+    // 실제 수행 시간 (sec 또는 min – 팀에서 정하기 나름)
+    @ColumnInfo(name = "total_time")
+    val totalTime: Int,
 
-    // 지각 여부 + 지각 시간(분)
-    val isOnTime: Boolean = true,
-    val lateMinutes: Int = 0
+    @ColumnInfo(name = "was_late")
+    val wasLate: Boolean
 )

@@ -15,7 +15,6 @@ import com.smwu.bigsister.data.local.dao.*
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
-
     abstract fun routineDao(): RoutineDao
     abstract fun stepDao(): StepDao
     abstract fun reservationDao(): ReservationDao

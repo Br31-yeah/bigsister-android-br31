@@ -28,7 +28,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "big_sister_db"
         )
-            .fallbackToDestructiveMigration() // 개발 단계에서는 편의상
+            .fallbackToDestructiveMigration()
             .build()
 
     @Provides
