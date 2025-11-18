@@ -88,7 +88,10 @@ dependencies {
     implementation(libs.gson)
 
     // --- ▼ 카카오 지도 SDK 추가 ▼ ---
-    implementation("com.kakao.maps.open:android:2.8.0")
+    //implementation("com.kakao.maps.open:android:2.13.0") //버전 수정
     // --- ▲ 카카오 지도 SDK 추가 ▲ ---
+
+    // 구글 지도
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
 
 }

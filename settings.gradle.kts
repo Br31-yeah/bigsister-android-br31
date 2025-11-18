@@ -17,7 +17,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
 
-        maven { url = uri("https://devrepo.kakao.com/nexus/repository/kakaomap-releases/") } //카카오 지도 저장소 주소
+
     }
 }
 

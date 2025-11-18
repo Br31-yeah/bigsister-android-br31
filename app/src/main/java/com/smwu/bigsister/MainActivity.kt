@@ -10,7 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.smwu.bigsister.ui.AppNavigation
 import com.smwu.bigsister.ui.theme.BigSisterTheme
-import com.smwu.bigsister.utils.getAppKeyHash
+
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        getAppKeyHash(this) // ✅ [추가] '키 해시'를 로그로 찍는 함수 호출
+
 
         enableEdgeToEdge()
         setContent {
