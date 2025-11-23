@@ -2,13 +2,13 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    // --- ▼ Hilt와 KSP 플러그인 적용 ▼ ---
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
 
 android {
     namespace = "com.smwu.bigsister"
+    // 팀 규칙에 따라 36 유지
     compileSdk {
         version = release(36)
     }
@@ -22,14 +22,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // ▼▼▼ 이 부분을 추가해주세요 ▼▼▼
-        ndk {
-            // 카카오 지도가 사용하는 CPU 구조를 모두 명시합니다.
-            abiFilters.add("arm64-v8a")
-            abiFilters.add("armeabi-v7a")
-            abiFilters.add("x86")
-            abiFilters.add("x86_64")
-        }
+        // 🗑️ [삭제됨] 카카오맵용 ndk { abiFilters ... } 설정 삭제함
+        // 구글 맵은 이 설정 없이도 잘 돌아갑니다.
     }
 
     buildTypes {
@@ -42,12 +36,10 @@ android {
         }
     }
     compileOptions {
-        // --- ▼ Hilt 호환성을 위해 Java 11 -> 17로 변경 ▼ ---
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        // --- ▼ Java 17에 맞게 JVM 타겟 변경 ▼ ---
         jvmTarget = "17"
     }
     buildFeatures {
@@ -72,42 +64,33 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-    // 1. 구글 맵 기본 SDK
+    // ✅ [Google Maps] 실제 사용하는 코드 (위쪽에 잘 선언되어 있습니다)
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
-
-    // 2. [중요] Compose에서 구글 맵을 편하게 쓰게 해주는 라이브러리 (이게 핵심!)
     implementation("com.google.maps.android:maps-compose:4.4.1")
 
-    // --- ▼ Hilt (연결/주입) ▼ ---
+    // --- Hilt ---
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
-    // --- ▼ Room (데이터베이스) ▼ ---
+    // --- Room ---
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
-    // --- ▼ ViewModel (상태관리) ▼ ---
+    // --- ViewModel ---
     implementation(libs.lifecycle.viewmodel.ktx)
 
-    // --- ▼ Navigation (화면 이동) ▼ ---
+    // --- Navigation ---
     implementation(libs.navigation.compose)
 
-    // --- ▼ DataStore (설정 저장) ▼ ---
+    // --- DataStore ---
     implementation(libs.datastore.preferences)
 
-    // --- ▼ [추가] Retrofit (네트워크 통신) ▼ ---
+    // --- Retrofit (ODsay 통신용) ---
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.gson)
-
-    // --- ▼ 카카오 지도 SDK 추가 ▼ ---
-    implementation("com.kakao.maps.open:android:2.9.5") //버전 수정
-    // --- ▲ 카카오 지도 SDK 추가 ▲ ---
-
-    // 구글 지도
-    //implementation("com.google.android.gms:play-services-maps:18.2.0")
 
 }
