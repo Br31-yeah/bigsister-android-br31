@@ -72,6 +72,13 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+    // 1. 구글 맵 기본 SDK
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    // 2. [중요] Compose에서 구글 맵을 편하게 쓰게 해주는 라이브러리 (이게 핵심!)
+    implementation("com.google.maps.android:maps-compose:4.4.1")
+
     // --- ▼ Hilt (연결/주입) ▼ ---
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

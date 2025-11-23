@@ -16,8 +16,11 @@
         android:theme="@style/Theme.BigSister">
 
         <meta-data
-            android:name="com.kakao.vectormap.APP_KEY"
-            android:value="193bcb7e7db09caeed23fbacfac6f358" />
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCE5OKNqjup3Xr2VkILoPKVS3N7WQwVtb4"/>
+
+
+
 
         <activity
             android:name=".MainActivity"
