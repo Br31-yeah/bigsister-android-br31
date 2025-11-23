@@ -21,6 +21,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // ▼▼▼ 이 부분을 추가해주세요 ▼▼▼
+        ndk {
+            // 카카오 지도가 사용하는 CPU 구조를 모두 명시합니다.
+            abiFilters.add("arm64-v8a")
+            abiFilters.add("armeabi-v7a")
+            abiFilters.add("x86")
+            abiFilters.add("x86_64")
+        }
     }
 
     buildTypes {
@@ -88,10 +97,10 @@ dependencies {
     implementation(libs.gson)
 
     // --- ▼ 카카오 지도 SDK 추가 ▼ ---
-    //implementation("com.kakao.maps.open:android:2.13.0") //버전 수정
+    implementation("com.kakao.maps.open:android:2.9.5") //버전 수정
     // --- ▲ 카카오 지도 SDK 추가 ▲ ---
 
     // 구글 지도
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    //implementation("com.google.android.gms:play-services-maps:18.2.0")
 
 }

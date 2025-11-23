@@ -17,10 +17,12 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
 
+        // ▼▼▼ 카카오맵 API ▼▼▼
+        maven { url = uri("https://devrepo.kakao.com/nexus/repository/kakaomap-releases/") }
+
 
     }
 }
 
 rootProject.name = "BigSister"
 include(":app")
- 
