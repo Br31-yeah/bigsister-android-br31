@@ -13,20 +13,15 @@ interface CompletionDao {
     @Query("SELECT * FROM completion_table")
     fun getAllCompletions(): Flow<List<CompletionEntity>>
 
-    @Query("SELECT * FROM completion_table WHERE routine_id = :routineId")
-    fun getCompletionsByRoutineId(routineId: Int): Flow<List<CompletionEntity>>
+    @Query("SELECT * FROM completion_table WHERE date = :date")
+    fun getCompletionsByDate(date: String): Flow<List<CompletionEntity>>
 
-    @Query(
-        """
-        SELECT * FROM completion_table 
-        WHERE completed_at BETWEEN :start AND :end
-        """
-    )
-    fun getCompletionsBetweenTime(
-        start: Long,
-        end: Long
+    @Query("SELECT * FROM completion_table WHERE date BETWEEN :startDate AND :endDate")
+    fun getCompletionsBetweenDates(
+        startDate: String,
+        endDate: String
     ): Flow<List<CompletionEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCompletion(completion: CompletionEntity): Long
+    suspend fun insertCompletion(completion: CompletionEntity)
 }

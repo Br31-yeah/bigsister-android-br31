@@ -1,6 +1,5 @@
 package com.smwu.bigsister.data.local
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -10,33 +9,53 @@ import androidx.room.PrimaryKey
     tableName = "completion_table",
     foreignKeys = [
         ForeignKey(
+            entity = ReservationEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["reservationId"],
+            onDelete = ForeignKey.SET_NULL
+        ),
+        ForeignKey(
             entity = RoutineEntity::class,
             parentColumns = ["id"],
-            childColumns = ["routine_id"],
-            onDelete = ForeignKey.CASCADE
+            childColumns = ["routineId"],
+            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [
-        Index("routine_id"),
-        Index("completed_at")
+        Index("reservationId"),
+        Index("routineId"),
+        Index("date")
     ]
 )
 data class CompletionEntity(
     @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "id")
-    val id: Int = 0,
+    val id: Long = 0L,
 
-    @ColumnInfo(name = "routine_id")
-    val routineId: Int,
+    // 완료한 루틴 ID (통계용)
+    val routineId: Long? = null,
 
-    // 완료 시각 (timestamp)
-    @ColumnInfo(name = "completed_at")
-    val completedAt: Long,
+    // 완료 시각 (timestamp, ms)
+    val completedAt: Long = System.currentTimeMillis(),
 
-    // 실제 수행 시간 (sec 또는 min – 팀에서 정하기 나름)
-    @ColumnInfo(name = "total_time")
-    val totalTime: Int,
+    // 실제 수행 시간(분 or 초) – 팀에서 단위 합의해서 사용
+    val totalTime: Int = 0,
 
-    @ColumnInfo(name = "was_late")
-    val wasLate: Boolean
+    // 지각 여부 (엑셀 wasLate)
+    val wasLate: Boolean = false,
+
+    // 어떤 예약 실행 기록인지 (있을 수도 있고 없을 수도 있음)
+    val reservationId: Long? = null,
+
+    // 실행된 날짜 (YYYY-MM-DD)
+    val date: String,
+
+    // 예정된 시작/종료, 실제 시작/종료
+    val expectedStartTime: String? = null,
+    val expectedEndTime: String? = null,
+    val actualStartTime: String? = null,
+    val actualEndTime: String? = null,
+
+    // 정시 여부 + 지각 시간(분)
+    val isOnTime: Boolean = true,
+    val lateMinutes: Int = 0
 )

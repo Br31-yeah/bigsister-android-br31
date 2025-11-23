@@ -1,6 +1,5 @@
 package com.smwu.bigsister.data.local
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -12,49 +11,57 @@ import androidx.room.PrimaryKey
         ForeignKey(
             entity = RoutineEntity::class,
             parentColumns = ["id"],
-            childColumns = ["routine_id"],
+            childColumns = ["routineId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
-        Index("routine_id")
+        Index("routineId")
     ]
 )
 data class StepEntity(
     @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "id")
-    val id: Int = 0,
+    val id: Long = 0L,
 
-    @ColumnInfo(name = "routine_id")
-    val routineId: Int,
+    // 소속된 루틴 ID (FK)
+    val routineId: Long,
 
-    @ColumnInfo(name = "icon")
-    val icon: String,
+    // 단계 아이콘 (이모지 등)
+    val icon: String = "✅",
 
-    @ColumnInfo(name = "name")
+    // 단계 이름 (예: "샤워하기")
     val name: String,
 
     // 예상 소요 시간(분)
-    @ColumnInfo(name = "duration")
     val duration: Int,
 
-    @ColumnInfo(name = "memo")
-    val memo: String,
+    // 단계 메모 (선택)
+    val memo: String? = null,
 
     // 이동 단계 여부
-    @ColumnInfo(name = "is_transport")
-    val isTransport: Boolean,
+    val isTransport: Boolean = false,
 
-    @ColumnInfo(name = "from")
-    val from: String,
+    // 출발지 / 도착지
+    val from: String? = null,
+    val to: String? = null,
 
-    @ColumnInfo(name = "to")
-    val to: String,
+    // 이동 수단: "car", "transit", "walk" 등
+    val transportMode: String? = null,
 
-    @ColumnInfo(name = "transport_mode")
-    val transportMode: String,
+    // 자동 계산된 이동 시간(분)
+    val calculatedDuration: Int? = null,
 
-    // 자동 계산된 이동 시간(분) – 이동 단계 아닐 수도 있으니 nullable
-    @ColumnInfo(name = "calculated_duration")
-    val calculatedDuration: Int? = null
+    // ------------------- 추가 필드 (엑셀에는 없지만 유지) -------------------
+
+    // 루틴 내에서의 순서 (0, 1, 2, …)
+    val orderIndex: Int = 0,
+
+    // 위경도 (필요 시 사용)
+    val departureLat: Double? = null,
+    val departureLng: Double? = null,
+    val arrivalLat: Double? = null,
+    val arrivalLng: Double? = null,
+
+    // 사용자가 직접 시간 덮어썼는지 여부
+    val isDurationOverridden: Boolean = false
 )

@@ -1,5 +1,6 @@
 package com.smwu.bigsister.data.repository
 
+import com.smwu.bigsister.data.local.AppDatabase
 import com.smwu.bigsister.data.local.ReservationEntity
 import com.smwu.bigsister.data.local.dao.ReservationDao
 import kotlinx.coroutines.flow.Flow
@@ -8,8 +9,9 @@ import javax.inject.Singleton
 
 @Singleton
 class ReservationRepository @Inject constructor(
-    private val reservationDao: ReservationDao
+    db: AppDatabase
 ) {
+    private val reservationDao: ReservationDao = db.reservationDao()
 
     fun getReservationsByDate(date: String): Flow<List<ReservationEntity>> =
         reservationDao.getReservationsByDate(date)
@@ -17,17 +19,9 @@ class ReservationRepository @Inject constructor(
     fun getAllReservations(): Flow<List<ReservationEntity>> =
         reservationDao.getAllReservations()
 
-    fun getReservationsBetweenDates(
-        startDate: String,
-        endDate: String
-    ): Flow<List<ReservationEntity>> =
-        reservationDao.getReservationsBetweenDates(startDate, endDate)
-
-    suspend fun addReservation(reservation: ReservationEntity) {
+    suspend fun addReservation(reservation: ReservationEntity): Long =
         reservationDao.insertReservation(reservation)
-    }
 
-    suspend fun deleteReservation(id: Int) {
+    suspend fun deleteReservation(id: Long) =
         reservationDao.deleteReservationById(id)
-    }
 }

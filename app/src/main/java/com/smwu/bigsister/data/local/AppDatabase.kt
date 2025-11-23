@@ -1,3 +1,4 @@
+// app/src/main/java/com/smwu/bigsister/data/local/AppDatabase.kt
 package com.smwu.bigsister.data.local
 
 import androidx.room.Database
@@ -15,6 +16,7 @@ import com.smwu.bigsister.data.local.dao.*
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
+
     abstract fun routineDao(): RoutineDao
     abstract fun stepDao(): StepDao
     abstract fun reservationDao(): ReservationDao

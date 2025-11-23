@@ -10,18 +10,12 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface StepDao {
 
-    @Query(
-        """
-        SELECT * FROM step_table 
-        WHERE routine_id = :routineId 
-        ORDER BY id ASC
-        """
-    )
-    fun getStepsByRoutineId(routineId: Int): Flow<List<StepEntity>>
+    @Query("SELECT * FROM step_table WHERE routineId = :routineId ORDER BY orderIndex ASC")
+    fun getStepsByRoutineId(routineId: Long): Flow<List<StepEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSteps(steps: List<StepEntity>)
 
-    @Query("DELETE FROM step_table WHERE routine_id = :routineId")
-    suspend fun deleteStepsByRoutineId(routineId: Int)
+    @Query("DELETE FROM step_table WHERE routineId = :routineId")
+    suspend fun deleteStepsByRoutineId(routineId: Long)
 }
