@@ -1,9 +1,11 @@
 package com.smwu.bigsister.ui.routine
 
+// ▼▼▼ 이제 Color.kt에 등록했으니 잘 불러와질 겁니다 ▼▼▼
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,44 +13,42 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.DirectionsCar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.smwu.bigsister.data.local.RoutineEntity
 import com.smwu.bigsister.data.local.RoutineWithSteps
+import com.smwu.bigsister.ui.theme.MintConfirm
+import com.smwu.bigsister.ui.theme.PurpleLight
+import com.smwu.bigsister.ui.theme.PurplePrimary
+import com.smwu.bigsister.ui.theme.TextGray
 import com.smwu.bigsister.ui.viewmodel.RoutineViewModel
 
 @Composable
@@ -58,234 +58,179 @@ fun RoutineListScreen(
     onRoutineClick: (Int) -> Unit,
     onStartRoutineClick: (Int) -> Unit
 ) {
-    val routinesWithSteps by viewModel.routineListWithSteps.collectAsState(initial = emptyList())
-
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var routineToDelete by remember { mutableStateOf<RoutineEntity?>(null) }
+    val routineList by viewModel.routineListWithSteps.collectAsState(initial = emptyList())
 
     Scaffold(
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp) // ✅ 'page' -> '.height'로 수정
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Text(
-                    "내 루틴",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        },
-        bottomBar = {
-            Button(
-                onClick = onAddRoutineClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.large
-            ) {
-                Text("+ 새 루틴 만들기", fontSize = 16.sp)
-            }
-        }
+        containerColor = Color.White,
     ) { paddingValues ->
-
-        if (routinesWithSteps.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp)
+        ) {
+            // 1. 타이틀
+            item {
                 Text(
-                    "저장된 루틴이 없습니다.\n새 루틴을 만들어보세요.",
-                    textAlign = TextAlign.Center,
-                    color = Color.Gray
+                    text = "내 루틴",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item { Spacer(Modifier.height(4.dp)) }
 
-                items(routinesWithSteps, key = { it.routine.id }) { routineWithSteps ->
-                    RoutineListItem(
-                        routineWithSteps = routineWithSteps,
-                        onEditClick = { onRoutineClick(routineWithSteps.routine.id) },
-                        onDeleteClick = {
-                            routineToDelete = routineWithSteps.routine
-                            showDeleteDialog = true
-                        },
-                        onStartClick = { onStartRoutineClick(routineWithSteps.routine.id) }
-                    )
+            // 2. 리스트가 비어있을 때 안내 문구 (선택사항)
+            if (routineList.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("저장된 루틴이 없어요 😢", color = TextGray)
+                    }
                 }
-
-                item { Spacer(Modifier.height(4.dp)) }
             }
-        }
 
-        if (showDeleteDialog) {
-            DeleteConfirmationDialog(
-                routineName = routineToDelete?.title ?: "",
-                onConfirm = {
-                    routineToDelete?.let { viewModel.deleteRoutine(it) }
-                    showDeleteDialog = false
-                    routineToDelete = null
-                },
-                onDismiss = {
-                    showDeleteDialog = false
-                    routineToDelete = null
+            // 3. 루틴 리스트
+            items(routineList) { routineWithSteps ->
+                RoutineFigmaCard(
+                    data = routineWithSteps,
+                    onEditClick = { onRoutineClick(routineWithSteps.routine.id) },
+                    onDeleteClick = { viewModel.deleteRoutine(routineWithSteps.routine) },
+                    onStartClick = { onStartRoutineClick(routineWithSteps.routine.id) }
+                )
+            }
+
+            // 4. 새 루틴 만들기 버튼
+            item {
+                Button(
+                    onClick = onAddRoutineClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PurpleLight,
+                        contentColor = PurplePrimary
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(0.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("새 루틴 만들기", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
-            )
+            }
         }
     }
 }
 
 @Composable
-fun RoutineListItem(
-    routineWithSteps: RoutineWithSteps,
+fun RoutineFigmaCard(
+    data: RoutineWithSteps,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onStartClick: () -> Unit
 ) {
-    val routine = routineWithSteps.routine
-    val steps = routineWithSteps.steps
-
-    val totalMinutes = steps.sumOf { it.duration }
-    val totalTimeStr = if (totalMinutes >= 60) {
+    val totalMinutes = data.steps.sumOf { it.duration }
+    val timeText = if (totalMinutes >= 60)
         "${totalMinutes / 60}시간 ${totalMinutes % 60}분"
-    } else {
+    else
         "${totalMinutes}분"
-    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF2F2F7))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // --- 1. 상단: 아이콘, 제목, 수정/삭제 ---
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            // 상단 영역
+            Row(verticalAlignment = Alignment.Top) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
-                        .background(Color.Red.copy(alpha = 0.1f)),
+                        .background(Color(0xFFE3E4FA)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Star,
-                        contentDescription = "루틴 아이콘",
-                        tint = Color.Red
-                    )
+                    // ⏰ 아이콘 대신 PlayArrow나 다른 아이콘을 써도 됩니다.
+                    Text(text = "⏰", fontSize = 24.sp)
                 }
 
-                Spacer(Modifier.size(12.dp))
+                Spacer(Modifier.width(16.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = routine.title,
+                        text = data.routine.title,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
                     )
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "$totalTimeStr • ${steps.size}단계",
+                        text = "🕒 $timeText  •  ${data.steps.size}단계",
                         fontSize = 14.sp,
-                        color = Color.Gray
+                        color = TextGray
                     )
                 }
 
-                IconButton(onClick = onEditClick) {
-                    Icon(Icons.Default.Edit, contentDescription = "수정")
-                }
-                IconButton(onClick = onDeleteClick) {
-                    Icon(Icons.Default.Delete, contentDescription = "삭제")
+                Row {
+                    IconButton(onClick = onEditClick, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Outlined.Edit, contentDescription = "수정", tint = TextGray, modifier = Modifier.size(20.dp))
+                    }
+                    IconButton(onClick = onDeleteClick, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Outlined.Delete, contentDescription = "삭제", tint = TextGray, modifier = Modifier.size(20.dp))
+                    }
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // --- 2. 하위 단계 목록 (최대 3개) ---
+            // 중간 단계 미리보기
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                steps.take(3).forEach { step ->
-                    StepRow(step = step)
+                data.steps.take(3).forEach { step ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val icon = if (step.isTransport) Icons.Rounded.DirectionsCar else Icons.Rounded.AccessTime
+                        Icon(icon, contentDescription = null, tint = TextGray, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "${step.name} · ${step.duration}분",
+                            fontSize = 14.sp,
+                            color = Color.DarkGray
+                        )
+                    }
                 }
-                if (steps.size > 3) {
-                    Text("... 그 외 ${steps.size - 3}개", fontSize = 14.sp, color = Color.Gray)
+                if (data.steps.size > 3) {
+                    Text("+ ${data.steps.size - 3}개 더보기", fontSize = 12.sp, color = TextGray, modifier = Modifier.padding(start = 24.dp))
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // --- 3. 바로 시작 버튼 ---
+            // 하단 시작 버튼
             Button(
                 onClick = onStartClick,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(40.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    contentColor = MaterialTheme.colorScheme.primary
+                    containerColor = MintConfirm,
+                    contentColor = Color.White
                 ),
-                elevation = ButtonDefaults.buttonElevation(0.dp)
+                contentPadding = PaddingValues(0.dp)
             ) {
-                Text("바로 시작")
+                // 아이콘 추가 (선택사항)
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp)) // 👈 여기도 PlayArrow로 수정됨
+                Spacer(Modifier.width(4.dp))
+                Text("바로 시작", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
-}
-
-@Composable
-private fun StepRow(step: com.smwu.bigsister.data.local.StepEntity) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = when (step.icon) {
-                "씻기" -> Icons.Default.Check
-                "이동" -> Icons.Default.Place
-                else -> Icons.Default.MoreVert
-            },
-            contentDescription = step.name,
-            modifier = Modifier.size(18.dp),
-            tint = Color.Gray
-        )
-        Spacer(Modifier.size(8.dp))
-        Text(text = step.name, modifier = Modifier.weight(1f), fontSize = 14.sp)
-        Text(text = "${step.duration}분", fontSize = 14.sp, color = Color.Gray)
-    }
-}
-
-@Composable
-fun DeleteConfirmationDialog(
-    routineName: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("이 루틴을 삭제하시겠어요?") },
-        text = { Text("'$routineName'을(를) 삭제하면 복구할 수 없습니다.") },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
-            ) {
-                Text("삭제")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("취소")
-            }
-        }
-    )
 }

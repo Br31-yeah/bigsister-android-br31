@@ -69,6 +69,12 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.maps.android:maps-compose:4.4.1")
 
+    // ▼▼▼ [추가] 이미지 로딩 라이브러리 (Coil) ▼▼▼
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // ▼▼▼ [추가] 모든 머티리얼 아이콘 사용하기 (이게 없으면 DragIndicator 등을 못 찾습니다) ▼▼▼
+    implementation("androidx.compose.material:material-icons-extended")
+
     // --- Hilt ---
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
@@ -92,5 +98,7 @@ dependencies {
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.gson)
+
+
 
 }
