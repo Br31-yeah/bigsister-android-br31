@@ -13,6 +13,9 @@ interface CompletionDao {
     @Query("SELECT * FROM completion_table")
     fun getAllCompletions(): Flow<List<CompletionEntity>>
 
+    @Query("SELECT * FROM completion_table WHERE routineId = :routineId")
+    fun getCompletionsByRoutineId(routineId: Long): Flow<List<CompletionEntity>>
+
     @Query("SELECT * FROM completion_table WHERE date = :date")
     fun getCompletionsByDate(date: String): Flow<List<CompletionEntity>>
 
@@ -23,5 +26,5 @@ interface CompletionDao {
     ): Flow<List<CompletionEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCompletion(completion: CompletionEntity)
+    suspend fun insertCompletion(completion: CompletionEntity): Long
 }

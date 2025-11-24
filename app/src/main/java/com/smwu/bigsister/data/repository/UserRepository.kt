@@ -2,6 +2,9 @@ package com.smwu.bigsister.data.repository
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.smwu.bigsister.data.local.UserEntity
+import com.smwu.bigsister.data.local.dao.UserDao
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,47 +12,67 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** Firebase 로그인 + 로컬 UserEntity(Room) 통합 저장소 */
 @Singleton
 class UserRepository @Inject constructor(
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val userDao: UserDao
 ) {
 
-    // 현재 로그인한 FirebaseUser 를 감시하기 위한 StateFlow
-    private val _currentUser = MutableStateFlow<FirebaseUser?>(auth.currentUser)
-    val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
+    /** FirebaseAuth 로그인 상태 */
+    private val _firebaseUser = MutableStateFlow<FirebaseUser?>(auth.currentUser)
+    val firebaseUser: StateFlow<FirebaseUser?> = _firebaseUser.asStateFlow()
+
+    /** 로컬 DB의 UserEntity 흐름 */
+    val localUser: Flow<UserEntity?> = userDao.getCurrentUser()
 
     init {
-        // 로그인 상태 실시간 반영
         auth.addAuthStateListener { firebaseAuth ->
-            _currentUser.value = firebaseAuth.currentUser
+            _firebaseUser.value = firebaseAuth.currentUser
         }
     }
 
-    /** 이메일 + 비밀번호로 로그인 */
+    /** 이메일 로그인 + 로컬 DB 저장 */
     suspend fun signInWithEmail(email: String, password: String): Result<FirebaseUser> {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
             val user = result.user ?: error("로그인 후 사용자 정보 없음")
+
+            saveToLocal(user)
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    /** 이메일 + 비밀번호로 회원가입 (필요 없으면 안 써도 됨) */
+    /** 이메일 회원가입 + 로컬 DB 저장 */
     suspend fun signUpWithEmail(email: String, password: String): Result<FirebaseUser> {
         return try {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val user = result.user ?: error("회원가입 후 사용자 정보 없음")
+
+            saveToLocal(user)
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    /** 로그아웃 */
-    fun signOut() {
+    /** 로그아웃 + 로컬 DB의 유저 삭제 */
+    suspend fun signOut() {
         auth.signOut()
-        _currentUser.value = null
+        userDao.clearUser()
+        _firebaseUser.value = null
+    }
+
+    /** FirebaseUser → UserEntity 변환 후 DB 저장 */
+    private suspend fun saveToLocal(user: FirebaseUser) {
+        val entity = UserEntity(
+            id = user.uid.hashCode().toLong(),       // String UID → 고유 Long 값 변환
+            nickname = user.displayName,
+            email = user.email,
+            profileImageUrl = user.photoUrl?.toString()
+        )
+        userDao.upsertUser(entity)
     }
 }

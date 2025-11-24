@@ -29,7 +29,8 @@ class LoginViewModel @Inject constructor(
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
-    val currentUser: StateFlow<FirebaseUser?> = userRepository.currentUser
+    // 🔥 UserRepository의 firebaseUser를 그대로 사용
+    val currentUser: StateFlow<FirebaseUser?> = userRepository.firebaseUser
 
     fun onEmailChange(newEmail: String) {
         email = newEmail
@@ -53,9 +54,7 @@ class LoginViewModel @Inject constructor(
             isLoading = false
 
             result
-                .onSuccess {
-                    onSuccess()
-                }
+                .onSuccess { onSuccess() }
                 .onFailure { e ->
                     errorMessage = e.localizedMessage ?: "로그인에 실패했습니다."
                 }
@@ -76,9 +75,7 @@ class LoginViewModel @Inject constructor(
             isLoading = false
 
             result
-                .onSuccess {
-                    onSuccess()
-                }
+                .onSuccess { onSuccess() }
                 .onFailure { e ->
                     errorMessage = e.localizedMessage ?: "회원가입에 실패했습니다."
                 }
@@ -86,6 +83,9 @@ class LoginViewModel @Inject constructor(
     }
 
     fun signOut() {
-        userRepository.signOut()
+        // 🔥 suspend이므로 반드시 coroutine에서 호출해야 함
+        viewModelScope.launch {
+            userRepository.signOut()
+        }
     }
 }

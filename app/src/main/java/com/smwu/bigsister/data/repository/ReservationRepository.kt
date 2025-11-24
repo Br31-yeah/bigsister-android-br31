@@ -1,27 +1,50 @@
 package com.smwu.bigsister.data.repository
 
-import com.smwu.bigsister.data.local.AppDatabase
 import com.smwu.bigsister.data.local.ReservationEntity
 import com.smwu.bigsister.data.local.dao.ReservationDao
+import com.smwu.bigsister.data.local.dao.RoutineDao
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
 class ReservationRepository @Inject constructor(
-    db: AppDatabase
+    private val reservationDao: ReservationDao,
+    private val routineDao: RoutineDao
 ) {
-    private val reservationDao: ReservationDao = db.reservationDao()
 
-    fun getReservationsByDate(date: String): Flow<List<ReservationEntity>> =
-        reservationDao.getReservationsByDate(date)
+    data class ScheduledRoutineInfo(
+        val reservationId: Long,
+        val routineId: Long,
+        val routineTitle: String,
+        val date: String,
+        val startTime: String
+    )
 
-    fun getAllReservations(): Flow<List<ReservationEntity>> =
-        reservationDao.getAllReservations()
+    fun getScheduledRoutinesForDate(date: String): Flow<List<ScheduledRoutineInfo>> {
+        val reservationsFlow = reservationDao.getReservationsByDate(date)
+        val routinesFlow = routineDao.getAllRoutines()
 
-    suspend fun addReservation(reservation: ReservationEntity): Long =
+        return combine(reservationsFlow, routinesFlow) { reservations, routines ->
+            reservations.mapNotNull { reservation ->
+                val routine = routines.find { it.id == reservation.routineId }
+                routine?.let {
+                    ScheduledRoutineInfo(
+                        reservationId = reservation.id,
+                        routineId = it.id,
+                        routineTitle = it.title,
+                        date = reservation.date,
+                        startTime = reservation.startTime
+                    )
+                }
+            }
+        }
+    }
+
+    suspend fun addReservation(reservation: ReservationEntity) {
         reservationDao.insertReservation(reservation)
+    }
 
-    suspend fun deleteReservation(id: Long) =
-        reservationDao.deleteReservationById(id)
+    suspend fun deleteReservation(reservationId: Long) {
+        reservationDao.deleteReservationById(reservationId)
+    }
 }
