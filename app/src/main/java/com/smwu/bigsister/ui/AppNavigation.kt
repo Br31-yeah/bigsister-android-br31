@@ -3,9 +3,19 @@ package com.smwu.bigsister.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -17,7 +27,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.smwu.bigsister.ui.home.HomeScreen
-import com.smwu.bigsister.ui.intro.SisterTypeScreen // 👈 아까 만든 온보딩 화면 임포트
+import com.smwu.bigsister.ui.intro.OnboardingFlow
 import com.smwu.bigsister.ui.live.LiveModeScreen
 import com.smwu.bigsister.ui.reservation.ReservationAddScreen
 import com.smwu.bigsister.ui.routine.RoutineAddScreen
@@ -29,7 +39,7 @@ import com.smwu.bigsister.ui.stats.StatsScreen
 sealed class BottomNavItem(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Home : BottomNavItem("home", "홈", Icons.Default.Home)
     object Routine : BottomNavItem("routine_list", "루틴", Icons.Default.List)
-    object Live : BottomNavItem("live_mode_entry", "실행", Icons.Default.PlayArrow) // 실행 대기 화면용
+    object Live : BottomNavItem("live_mode_entry", "실행", Icons.Default.PlayArrow)
     object Stats : BottomNavItem("stats", "통계", Icons.Default.DateRange)
     object Settings : BottomNavItem("settings", "설정", Icons.Default.Settings)
 }
@@ -42,17 +52,16 @@ fun AppNavigation() {
     val bottomNavItems = listOf(
         BottomNavItem.Home,
         BottomNavItem.Routine,
-        // BottomNavItem.Live, // '실행' 탭은 보통 루틴 선택 후 진입하므로 탭에서 뺄 수도 있지만, React 구조 따라 넣음
+        // BottomNavItem.Live,
         BottomNavItem.Stats,
         BottomNavItem.Settings
     )
 
-    // 현재 보고 있는 화면이 어디인지 확인
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val currentRoute = currentDestination?.route
 
-    // 하단 바를 보여줄 화면들 지정 (온보딩이나 루틴 추가 화면에서는 숨김)
+    // 하단 바를 보여줄 화면들 (온보딩이나 루틴 추가 화면에서는 숨김)
     val showBottomBar = currentRoute in bottomNavItems.map { it.route }
 
     Scaffold(
@@ -66,13 +75,12 @@ fun AppNavigation() {
                             label = { Text(item.label) },
                             selected = selected,
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xFF8B8FD9), // 피그마의 보라색
+                                selectedIconColor = Color(0xFF8B8FD9),
                                 selectedTextColor = Color(0xFF8B8FD9),
                                 indicatorColor = Color(0xFFE3E4FA)
                             ),
                             onClick = {
                                 navController.navigate(item.route) {
-                                    // 탭 클릭 시 스택 관리 (Back 버튼 누르면 홈으로 오게)
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
                                     }
@@ -86,26 +94,25 @@ fun AppNavigation() {
             }
         }
     ) { innerPadding ->
-        // Scaffold의 padding을 적용하기 위해 Box로 감쌉니다.
         Box(modifier = Modifier.padding(innerPadding)) {
             NavHost(
                 navController = navController,
-                startDestination = "onboarding" // 👈 시작을 '온보딩'으로 변경 (React 로직 반영)
+                startDestination = "onboarding" // 시작점: 온보딩
             ) {
-                // 1. 온보딩 (언니 타입 선택) - React의 <Onboarding />
+                // 1. 온보딩 (시작 -> 타입선택 -> 알림설정)
                 composable("onboarding") {
-                    SisterTypeScreen(
-                        onNextClick = { selectedType ->
-                            // 타입 선택 후 홈으로 이동
-                            // 실제로는 여기서 DataStore에 selectedType을 저장해야 함
+                    // ✅ [수정] OnboardingFlow를 연결하여 전체 과정을 진행
+                    OnboardingFlow(
+                        onComplete = {
+                            // 모든 설정이 끝나면 홈으로 이동하고, 뒤로가기 막음 (앱 종료됨)
                             navController.navigate("home") {
-                                popUpTo("onboarding") { inclusive = true } // 뒤로가기 못하게
+                                popUpTo("onboarding") { inclusive = true }
                             }
                         }
                     )
                 }
 
-                // 2. 홈 - React의 <Home />
+                // 2. 홈
                 composable("home") {
                     HomeScreen(
                         onNavigateToRoutineAdd = { date ->
@@ -119,7 +126,7 @@ fun AppNavigation() {
                     )
                 }
 
-                // 3. 루틴 목록 - React의 <RoutineList />
+                // 3. 루틴 목록
                 composable("routine_list") {
                     RoutineListScreen(
                         onAddRoutineClick = { navController.navigate("routine_builder") },
@@ -132,7 +139,7 @@ fun AppNavigation() {
                     )
                 }
 
-                // 4. 루틴 생성/수정 - React의 <RoutineBuilder />
+                // 4. 루틴 생성/수정
                 composable(
                     route = "routine_builder?id={routineId}",
                     arguments = listOf(navArgument("routineId") {
@@ -147,7 +154,7 @@ fun AppNavigation() {
                     )
                 }
 
-                // 5. 예약 추가 (기존 유지)
+                // 5. 예약 추가
                 composable(
                     route = "routine_reservation?date={date}",
                     arguments = listOf(navArgument("date") {
@@ -162,7 +169,7 @@ fun AppNavigation() {
                     )
                 }
 
-                // 6. 실행 모드 - React의 <LiveMode />
+                // 6. 실행 모드
                 composable(
                     route = "live_mode/{routineId}",
                     arguments = listOf(navArgument("routineId") {
@@ -174,19 +181,17 @@ fun AppNavigation() {
                     )
                 }
 
-                // (탭용) 실행 모드 진입점 임시 처리
+                // (탭용) 실행 모드 진입점
                 composable("live_mode_entry") {
-                    // 실제로는 실행할 루틴을 선택해야 하므로, 일단 루틴 리스트로 보내거나
-                    // 최근 루틴을 실행하는 로직이 필요합니다. 여기선 임시로 텍스트 표시.
                     Text("루틴 탭에서 실행할 루틴을 선택해주세요.")
                 }
 
-                // 7. 통계 - React의 <Stats />
+                // 7. 통계
                 composable("stats") {
                     StatsScreen()
                 }
 
-                // 8. 설정 - React의 <Settings />
+                // 8. 설정
                 composable("settings") {
                     SettingsScreen(
                         onNavigateBack = { navController.popBackStack() }

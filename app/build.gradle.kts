@@ -38,6 +38,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // ▼▼▼ 이 줄을 추가하세요 (핵심!) ▼▼▼
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "17"
@@ -74,6 +76,9 @@ dependencies {
 
     // ▼▼▼ [추가] 모든 머티리얼 아이콘 사용하기 (이게 없으면 DragIndicator 등을 못 찾습니다) ▼▼▼
     implementation("androidx.compose.material:material-icons-extended")
+
+    // ▼▼▼ 이 줄을 추가하세요 (날짜 기능 호환성 도구) ▼▼▼
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     // --- Hilt ---
     implementation(libs.hilt.android)

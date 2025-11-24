@@ -33,6 +33,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -67,6 +68,8 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+// ▼▼▼ 이 줄을 추가하세요 (실험적 기능 사용 허용) ▼▼▼
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToRoutineAdd: (String) -> Unit,
@@ -311,6 +314,9 @@ fun EmptyRoutineState(onMakeRoutineClick: () -> Unit) {
 }
 
 // 🎨 [추가] Figma 디자인을 그대로 옮긴 달력 팝업
+
+// ▼▼▼ 여기도 추가해주세요 (달력 팝업) ▼▼▼
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarDialog(
     initialDate: LocalDate,
