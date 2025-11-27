@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    id("com.google.gms.google-services")
+    id("com.google.gms.google-services") // Firebase용 (DB 브랜치 쪽)
 }
 
 android {
@@ -34,6 +34,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+
+        // ⬇ UI2에서 가져온 desugaring 옵션
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "17"
@@ -80,6 +83,7 @@ dependencies {
     // ---- DataStore ----
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.datastore:datastore-core:1.1.1")
+    // (원하면 여기 나중에 libs.datastore.preferences 로 교체 가능)
 
     // ---- Firebase ----
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
@@ -100,4 +104,24 @@ dependencies {
     // —— Debug ——
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // ===============================
+    //   ▼▼ UI2 브랜치에서 가져온 추가들 ▼▼
+    // ===============================
+
+    // ✅ Google Maps
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.maps.android:maps-compose:4.4.1")
+
+    // ✅ 이미지 로딩 (Coil)
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // ✅ JDK desugaring (LocalDate 등)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
+    // ✅ Retrofit & Gson (ODsay/네트워크 통신용)
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.gson)
 }

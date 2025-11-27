@@ -12,7 +12,7 @@ lifecycleRuntimeKtx = "2.9.4"
 
 activityCompose = "1.11.0"
 composeBom = "2024.09.00"
-kotlinCompilerExtension = "1.5.14"   # FIXED
+kotlinCompilerExtension = "1.5.14"
 
 navigationCompose = "2.7.7"
 
@@ -21,9 +21,15 @@ room = "2.6.1"
 hilt = "2.51.1"
 hiltNavigationCompose = "1.2.0"
 
-ksp = "2.0.21-1.0.27"    # FIXED
+ksp = "2.0.21-1.0.27"
+
+# ▼ ui2 쪽에서 가져온 버전들
+datastore = "1.1.1"
+retrofit = "2.9.0"
+gson = "2.10.1"
 
 [libraries]
+# Core
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 
 # Test
@@ -34,6 +40,9 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 # Lifecycle
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+
+# (ui2에서 쓰던 alias도 지원 – 혹시 모를 참조 대비)
+lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 
 # Activity Compose
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -51,17 +60,31 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 
 # Navigation
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+# (ui2 네이밍도 같이 지원)
+navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
-# Room
+# Room (db 브랜치 네이밍)
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
+# (ui2 네이밍도 같이 지원)
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 # Hilt
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 
+# DataStore (ui2에서 버전만 가져온 것)
+datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+
+# Retrofit & Gson (ui2 추가)
+retrofit-core = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

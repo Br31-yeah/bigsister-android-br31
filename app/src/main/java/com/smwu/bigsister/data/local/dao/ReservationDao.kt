@@ -10,21 +10,24 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ReservationDao {
 
-    @Query("SELECT * FROM reservation_table WHERE date = :date")
-    fun getReservationsByDate(date: String): Flow<List<ReservationEntity>>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReservation(reservation: ReservationEntity)
 
-    @Query("SELECT * FROM reservation_table")
-    fun getAllReservations(): Flow<List<ReservationEntity>>
+    @Query("DELETE FROM reservation_table WHERE id = :reservationId")
+    suspend fun deleteReservationById(reservationId: Long)
 
+    // 특정 날짜 조회 (정렬됨)
+    @Query("SELECT * FROM reservation_table WHERE date = :date ORDER BY startTime ASC")
+    fun getReservationsForDate(date: String): Flow<List<ReservationEntity>>
+
+    // 특정 월 조회 (ex: 2025-11)
+    @Query("SELECT * FROM reservation_table WHERE date LIKE :month || '%' ORDER BY date ASC")
+    fun getReservationsForMonth(month: String): Flow<List<ReservationEntity>>
+
+    // 옵션: 필요하면 유지할 기간 조회
     @Query("SELECT * FROM reservation_table WHERE date BETWEEN :startDate AND :endDate")
     fun getReservationsBetweenDates(
         startDate: String,
         endDate: String
     ): Flow<List<ReservationEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertReservation(reservation: ReservationEntity): Long
-
-    @Query("DELETE FROM reservation_table WHERE id = :id")
-    suspend fun deleteReservationById(id: Long)
 }

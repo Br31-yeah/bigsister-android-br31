@@ -10,21 +10,25 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CompletionDao {
 
-    @Query("SELECT * FROM completion_table")
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCompletion(completion: CompletionEntity): Long
+
+    @Query("SELECT * FROM completion_table ORDER BY completedAt DESC")
     fun getAllCompletions(): Flow<List<CompletionEntity>>
 
-    @Query("SELECT * FROM completion_table WHERE routineId = :routineId")
+    @Query("SELECT * FROM completion_table WHERE routineId = :routineId ORDER BY completedAt DESC")
     fun getCompletionsByRoutineId(routineId: Long): Flow<List<CompletionEntity>>
 
-    @Query("SELECT * FROM completion_table WHERE date = :date")
+    @Query("SELECT * FROM completion_table WHERE date = :date ORDER BY completedAt DESC")
     fun getCompletionsByDate(date: String): Flow<List<CompletionEntity>>
 
-    @Query("SELECT * FROM completion_table WHERE date BETWEEN :startDate AND :endDate")
+    @Query("""
+        SELECT * FROM completion_table 
+        WHERE date BETWEEN :startDate AND :endDate 
+        ORDER BY completedAt DESC
+    """)
     fun getCompletionsBetweenDates(
         startDate: String,
         endDate: String
     ): Flow<List<CompletionEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCompletion(completion: CompletionEntity): Long
 }

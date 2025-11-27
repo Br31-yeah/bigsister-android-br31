@@ -32,4 +32,8 @@ interface RoutineDao {
     @Transaction
     @Query("SELECT * FROM routine_table WHERE id = :routineId LIMIT 1")
     suspend fun getRoutineWithSteps(routineId: Long): RoutineWithSteps?
+
+    @Transaction
+    @Query("SELECT * FROM routine_table")
+    fun getAllRoutinesWithSteps(): Flow<List<RoutineWithSteps>>
 }

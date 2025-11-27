@@ -25,12 +25,13 @@ data class ReservationEntity(
     val id: Long = 0L,
 
     val routineId: Long,
-    // YYYY-MM-DD
+
+    /** yyyy-MM-dd */
     val date: String,
-    // "HH:mm"
+
+    /** HH:mm 시작 시간 */
     val startTime: String,
 
-    val endTime: String,
-    // "SCHEDULED", "COMPLETED", "CANCELLED" 등
-    val status: String = "SCHEDULED"
+    /** 종료 시간 (선택사항) */
+    val endTime: String? = null
 )

@@ -20,8 +20,13 @@ class ReservationRepository @Inject constructor(
         val startTime: String
     )
 
+    /** 날짜별 예약 목록 */
+    fun getReservationsByDate(date: String): Flow<List<ReservationEntity>> =
+        reservationDao.getReservationsForDate(date)   // ← 여기 수정됨!
+
+    /** 날짜별 루틴 + 예약 JOIN */
     fun getScheduledRoutinesForDate(date: String): Flow<List<ScheduledRoutineInfo>> {
-        val reservationsFlow = reservationDao.getReservationsByDate(date)
+        val reservationsFlow = reservationDao.getReservationsForDate(date)
         val routinesFlow = routineDao.getAllRoutines()
 
         return combine(reservationsFlow, routinesFlow) { reservations, routines ->
@@ -40,6 +45,11 @@ class ReservationRepository @Inject constructor(
         }
     }
 
+    fun getReservationsForMonth(month: String): Flow<List<ReservationEntity>> =
+        reservationDao.getReservationsForMonth(month)
+
+    fun getReservationsBetweenDates(start: String, end: String): Flow<List<ReservationEntity>> =
+        reservationDao.getReservationsBetweenDates(start, end)
     suspend fun addReservation(reservation: ReservationEntity) {
         reservationDao.insertReservation(reservation)
     }

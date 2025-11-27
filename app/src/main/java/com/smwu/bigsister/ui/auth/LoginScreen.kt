@@ -1,5 +1,6 @@
 package com.smwu.bigsister.ui.auth
 
+import com.smwu.bigsister.ui.viewmodel.LoginViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -17,7 +18,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.smwu.bigsister.ui.viewmodel.LoginViewModel
+
 
 @Composable
 fun LoginScreen(
