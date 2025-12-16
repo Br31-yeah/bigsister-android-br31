@@ -2,117 +2,178 @@ package com.smwu.bigsister.ui.routine
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.smwu.bigsister.data.local.StepEntity
+import com.smwu.bigsister.ui.components.FigmaInput
+import com.smwu.bigsister.ui.components.SecondaryButton
+import com.smwu.bigsister.ui.components.StepCard
+import com.smwu.bigsister.ui.map.StationSearchScreen
+import com.smwu.bigsister.ui.viewModel.RoutineEditState
+import com.smwu.bigsister.ui.components.RoutineSummaryCard
 import com.smwu.bigsister.ui.viewModel.RoutineViewModel
+import com.smwu.bigsister.ui.theme.MintConfirm
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutineAddScreen(
-    routineId: Long? = null,
-    onFinished: () -> Unit,
+    routineId: Long?,
+    onNavigateBack: () -> Unit,
     viewModel: RoutineViewModel = hiltViewModel()
 ) {
-    val editState by viewModel.editState.collectAsState()
-
+    // 루틴 로딩
     LaunchedEffect(routineId) {
         viewModel.loadRoutineForEdit(routineId)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
+    val state by viewModel.editState.collectAsState()
 
-        OutlinedTextField(
-            value = editState.title,
-            onValueChange = viewModel::updateTitle,
-            label = { Text("루틴 이름") },
-            modifier = Modifier.fillMaxWidth()
-        )
+    // 장소 검색용 상태
+    var activeSearchStepId by remember { mutableStateOf<Long?>(null) }
+    var activeSearchType by remember { mutableStateOf<String?>(null) }
 
-        Spacer(Modifier.height(16.dp))
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = if (routineId == null) "루틴 생성" else "루틴 수정",
+                        fontSize = 18.sp
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "뒤로가기")
+                    }
+                }
+            )
+        },
+        containerColor = Color.White
+    ) { paddingValues ->
 
         LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            contentPadding = PaddingValues(bottom = 32.dp)
         ) {
-            items(editState.steps.size) { index ->
-                val step = editState.steps[index]
 
-                StepEditor(
-                    step = step,
-                    onChange = viewModel::updateStep,
-                    onDelete = { viewModel.removeStep(step) },
-                    onCalculate = { viewModel.calculateDuration(step) }
+            /* ───────── 루틴 이름 ───────── */
+            item {
+                Text("루틴 이름", fontSize = 16.sp)
+                Spacer(Modifier.height(8.dp))
+                FigmaInput(
+                    value = state.title,
+                    onValueChange = viewModel::updateTitle,
+                    placeholder = "아침 루틴, 출근 준비…"
                 )
             }
-        }
 
-        Spacer(Modifier.height(16.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = viewModel::addBlankStep) {
-                Text("단계 추가")
+            /* ───────── 단계 ───────── */
+            item {
+                Text("단계", fontSize = 16.sp)
             }
-            Button(onClick = viewModel::addMovementStep) {
-                Text("이동 추가")
+
+            itemsIndexed(
+                items = state.steps,
+                key = { _, step -> step.id }
+            ) { _, step ->
+                StepCard(
+                    step = step,
+                    viewModel = viewModel,
+                    onDelete = { viewModel.removeStep(step) },
+                    onSearch = { type ->
+                        activeSearchStepId = step.id
+                        activeSearchType = type
+                    }
+                )
+            }
+
+            /* ───────── 단계 추가 ───────── */
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SecondaryButton(
+                        text = "단계 추가",
+                        onClick = viewModel::addBlankStep,
+                        modifier = Modifier.weight(1f)
+                    )
+                    SecondaryButton(
+                        text = "이동",
+                        onClick = viewModel::addMovementStep,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            /* ───────── 요약 ───────── */
+            item {
+                RoutineSummaryCard(state = state)
+            }
+
+            /* ───────── 저장 ───────── */
+            item {
+                Button(
+                    onClick = { viewModel.saveRoutine(onNavigateBack) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MintConfirm,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = if (routineId == null) "루틴 저장" else "수정 완료",
+                        fontSize = 18.sp
+                    )
+                }
             }
         }
 
-        Spacer(Modifier.height(24.dp))
-
-        Button(
-            onClick = { viewModel.saveRoutine(onFinished) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("저장")
-        }
-    }
-}
-
-@Composable
-private fun StepEditor(
-    step: StepEntity,
-    onChange: (StepEntity) -> Unit,
-    onDelete: () -> Unit,
-    onCalculate: () -> Unit
-) {
-    Card {
-        Column(Modifier.padding(12.dp)) {
-
-            OutlinedTextField(
-                value = step.name,
-                onValueChange = { onChange(step.copy(name = it)) },
-                label = { Text("단계 이름") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = step.duration.toString(),
-                onValueChange = {
-                    onChange(step.copy(duration = it.toIntOrNull() ?: 0))
+        /* ───────── 장소 검색 화면 ───────── */
+        if (activeSearchStepId != null && activeSearchType != null) {
+            StationSearchScreen(
+                onDismiss = {
+                    activeSearchStepId = null
+                    activeSearchType = null
                 },
-                label = { Text("소요 시간 (분)") },
-                modifier = Modifier.fillMaxWidth()
+                onStationSelected = { station ->
+                    val step = state.steps.firstOrNull { it.id == activeSearchStepId }
+                        ?: return@StationSearchScreen
+
+                    val value = "${station.stationName}|${station.x},${station.y}"
+
+                    val updatedStep =
+                        if (activeSearchType == "FROM") {
+                            step.copy(from = value)
+                        } else {
+                            step.copy(to = value)
+                        }
+
+                    viewModel.updateStep(updatedStep)
+
+                    if (updatedStep.from != null && updatedStep.to != null) {
+                        viewModel.calculateDuration(updatedStep)
+                    }
+
+                    activeSearchStepId = null
+                    activeSearchType = null
+                }
             )
-
-            Spacer(Modifier.height(8.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onCalculate) {
-                    Text("시간 계산")
-                }
-                TextButton(onClick = onDelete) {
-                    Text("삭제")
-                }
-            }
         }
     }
 }

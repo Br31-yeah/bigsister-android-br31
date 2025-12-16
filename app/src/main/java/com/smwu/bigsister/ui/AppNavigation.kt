@@ -35,7 +35,7 @@ import com.smwu.bigsister.ui.settings.SettingsScreen
 import com.smwu.bigsister.ui.stats.StatsScreen
 
 /* ------------------------------------------------------------
-   Bottom Navigation Items 정의
+   Bottom Navigation Items
 ------------------------------------------------------------ */
 sealed class BottomNavItem(
     val route: String,
@@ -49,7 +49,7 @@ sealed class BottomNavItem(
 }
 
 /* ------------------------------------------------------------
-   App Navigation (최신 버전)
+   App Navigation (Routing Only)
 ------------------------------------------------------------ */
 @Composable
 fun AppNavigation() {
@@ -75,7 +75,8 @@ fun AppNavigation() {
                 NavigationBar(containerColor = Color.White) {
                     bottomNavItems.forEach { item ->
                         val selected =
-                            navBackStackEntry?.destination?.hierarchy?.any { it.route == item.route } == true
+                            navBackStackEntry?.destination?.hierarchy
+                                ?.any { it.route == item.route } == true
 
                         NavigationBarItem(
                             selected = selected,
@@ -108,7 +109,7 @@ fun AppNavigation() {
                 startDestination = "onboarding"
             ) {
 
-                /* ------------------ 온보딩 ------------------ */
+                /* ------------------ Onboarding ------------------ */
                 composable("onboarding") {
                     OnboardingFlow(
                         onComplete = {
@@ -119,7 +120,7 @@ fun AppNavigation() {
                     )
                 }
 
-                /* ------------------ 홈 ------------------ */
+                /* ------------------ Home ------------------ */
                 composable("home") {
                     HomeScreen(
                         onNavigateToReservationAdd = { date ->
@@ -134,10 +135,12 @@ fun AppNavigation() {
                     )
                 }
 
-                /* ------------------ 루틴 목록 ------------------ */
+                /* ------------------ Routine List ------------------ */
                 composable("routine_list") {
                     RoutineListScreen(
-                        onAddRoutineClick = { navController.navigate("routine_builder") },
+                        onAddRoutineClick = {
+                            navController.navigate("routine_builder")
+                        },
                         onRoutineClick = { id ->
                             navController.navigate("routine_builder?id=$id")
                         },
@@ -147,7 +150,7 @@ fun AppNavigation() {
                     )
                 }
 
-                /* ---------------- 루틴 추가/수정 ---------------- */
+                /* ---------------- Routine Add / Edit ---------------- */
                 composable(
                     route = "routine_builder?id={routineId}",
                     arguments = listOf(
@@ -158,15 +161,18 @@ fun AppNavigation() {
                         }
                     )
                 ) { entry ->
-                    val routineId = entry.arguments?.getString("routineId")?.toLongOrNull()
+                    val routineId =
+                        entry.arguments?.getString("routineId")?.toLongOrNull()
 
                     RoutineAddScreen(
                         routineId = routineId,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        }
                     )
                 }
 
-                /* ------------------ 예약 추가 ------------------ */
+                /* ------------------ Reservation Add ------------------ */
                 composable(
                     route = "routine_reservation?date={date}",
                     arguments = listOf(
@@ -178,14 +184,16 @@ fun AppNavigation() {
                 ) { entry ->
                     ReservationAddScreen(
                         dateString = entry.arguments?.getString("date"),
-                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        },
                         onNavigateToRoutineAdd = {
                             navController.navigate("routine_builder")
                         }
                     )
                 }
 
-                /* ------------------ 실행 모드 ------------------ */
+                /* ------------------ Live Mode ------------------ */
                 composable(
                     route = "live_mode/{routineId}",
                     arguments = listOf(
@@ -193,17 +201,23 @@ fun AppNavigation() {
                     )
                 ) {
                     LiveModeScreen(
-                        onFinishRoutine = { navController.popBackStack() }
+                        onFinishRoutine = {
+                            navController.popBackStack()
+                        }
                     )
                 }
 
-                /* ------------------ 통계 ------------------ */
-                composable("stats") { StatsScreen() }
+                /* ------------------ Stats ------------------ */
+                composable("stats") {
+                    StatsScreen()
+                }
 
-                /* ------------------ 설정 ------------------ */
+                /* ------------------ Settings ------------------ */
                 composable("settings") {
                     SettingsScreen(
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        }
                     )
                 }
             }

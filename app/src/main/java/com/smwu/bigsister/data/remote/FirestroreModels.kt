@@ -1,6 +1,8 @@
 package com.smwu.bigsister.data.remote
 
-import com.smwu.bigsister.data.local.*
+import com.smwu.bigsister.data.local.CompletionEntity
+import com.smwu.bigsister.data.local.RoutineEntity
+import com.smwu.bigsister.data.local.StepEntity
 
 data class RoutineDocument(
     val id: Long = 0L,
@@ -23,7 +25,7 @@ data class StepDocument(
     val routineId: Long = 0L,
     val orderIndex: Int = 0,
     val name: String = "",
-    val duration: Int = 0
+    val duration: Long = 0
 ) {
     constructor(entity: StepEntity) : this(
         id = entity.id,

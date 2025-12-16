@@ -1,6 +1,5 @@
 package com.smwu.bigsister.ui.viewModel
 
-import StepRepository
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
@@ -11,12 +10,7 @@ import com.smwu.bigsister.data.repository.ReservationRepository
 import com.smwu.bigsister.data.repository.RoutineRepository
 import com.smwu.bigsister.data.repository.StepRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
@@ -25,12 +19,11 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val routineRepository: RoutineRepository,
     private val reservationRepository: ReservationRepository,
-    private val stepRepository: StepRepository   // ← duration 계산용
+    private val stepRepository: StepRepository
 ) : ViewModel() {
 
-    // ──────────────────────────────────────
-    // 날짜 상태
-    // ──────────────────────────────────────
+    /* ───────── 날짜 ───────── */
+
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
@@ -39,23 +32,19 @@ class HomeViewModel @Inject constructor(
         loadSchedules()
     }
 
-    // ──────────────────────────────────────
-    // 루틴 목록
-    // ──────────────────────────────────────
+    /* ───────── 루틴 ───────── */
+
     private val _routines = MutableStateFlow<List<RoutineEntity>>(emptyList())
     val routines: StateFlow<List<RoutineEntity>> = _routines.asStateFlow()
 
-    // ──────────────────────────────────────
-    // 전체 스케줄
-    // ──────────────────────────────────────
+    /* ───────── 예약 ───────── */
+
     private val _schedules = MutableStateFlow<List<ReservationEntity>>(emptyList())
     val schedules: StateFlow<List<ReservationEntity>> = _schedules.asStateFlow()
 
-    // 선택된 날짜의 스케줄
     val todaySchedules: StateFlow<List<ReservationEntity>> =
         combine(_schedules, _selectedDate) { list, date ->
-            val d = date.toString()
-            list.filter { it.date == d }
+            list.filter { it.date == date.toString() }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -63,9 +52,6 @@ class HomeViewModel @Inject constructor(
         loadSchedules()
     }
 
-    // ──────────────────────────────────────
-    // DB 로딩
-    // ──────────────────────────────────────
     private fun loadRoutines() {
         viewModelScope.launch {
             routineRepository.getAllRoutines().collect {
@@ -76,40 +62,25 @@ class HomeViewModel @Inject constructor(
 
     private fun loadSchedules() {
         viewModelScope.launch {
-            val dateStr = _selectedDate.value.toString()
-            reservationRepository.getReservationsByDate(dateStr).collect {
-                _schedules.value = it
-            }
+            reservationRepository
+                .getReservationsByDate(_selectedDate.value.toString())
+                .collect { _schedules.value = it }
         }
     }
 
-    // ──────────────────────────────────────
-    // Step에서 duration 합산 계산
-    // ──────────────────────────────────────
-    suspend fun calculateTotalDuration(routineId: Long): Int {
-        return stepRepository.calculateTotalDuration(routineId)
+    /* ───────── duration 계산 (✅ Long) ───────── */
+
+    suspend fun calculateTotalDuration(routineId: Long): Long {
+        return stepRepository.calculateTotalDurationOnce(routineId)
     }
 
-    // ──────────────────────────────────────
-    // UI 유틸
-    // ──────────────────────────────────────
+    /* ───────── UI 유틸 ───────── */
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun getWeekDates(date: LocalDate): List<LocalDate> {
         val start = date.minusDays(date.dayOfWeek.ordinal.toLong())
         return List(7) { start.plusDays(it.toLong()) }
     }
 
-    fun getSchedulesForDate(date: LocalDate): List<ReservationEntity> {
-        return _schedules.value.filter { it.date == date.toString() }
-    }
-
-    fun toggleCalendar() {
-        // TODO: UI 확장 기능
-    }
-
-    fun showAddRoutine(date: LocalDate) {
-        // TODO: 네비게이션 이동
-    }
-
-    fun formatDuration(min: Int): String = "${min}분"
+    fun formatDuration(min: Long): String = "${min}분"
 }
