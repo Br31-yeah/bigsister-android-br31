@@ -22,6 +22,9 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://devrepo.kakao.com/nexus/repository/kakaomap-releases/")
         }
+
+        // ▼▼▼ JitPack (MPAndroidChart 등) ▼▼▼
+        maven("https://jitpack.io")
     }
 }
 

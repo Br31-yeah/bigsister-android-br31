@@ -7,33 +7,32 @@ import com.smwu.bigsister.data.local.StepEntity
 import com.smwu.bigsister.data.local.dao.RoutineDao
 import com.smwu.bigsister.data.local.dao.StepDao
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
+
 class RoutineRepository @Inject constructor(
     private val routineDao: RoutineDao,
     private val stepDao: StepDao
 ) {
 
-    /** 모든 루틴 목록 */
     fun getAllRoutines(): Flow<List<RoutineEntity>> =
         routineDao.getAllRoutines()
 
-    /** 모든 루틴 + 스텝 JOIN 목록 */
-    val routinesWithSteps: Flow<List<RoutineWithSteps>> =
+    /** ✅ ViewModel에서 쓰는 함수 */
+    fun getRoutineListWithSteps(): Flow<List<RoutineWithSteps>> =
         routineDao.getAllRoutinesWithSteps()
 
-    /** 특정 루틴 1개 조회 */
-    fun getRoutineById(id: Long): Flow<RoutineEntity?> =
-        routineDao.getRoutineById(id)
+    /** 단일 루틴 (suspend 로 변경) */
+    suspend fun getRoutineByIdOnce(id: Long): RoutineEntity =
+        routineDao.getRoutineById(id).first()
+            ?: throw IllegalStateException("Routine not found: $id")
 
-    /** 특정 루틴 + 스텝 JOIN 조회 */
     suspend fun getRoutineWithSteps(id: Long): RoutineWithSteps? =
         routineDao.getRoutineWithSteps(id)
 
-    /** 스텝 목록 Flow로 가져오기 */
     fun getStepsForRoutine(routineId: Long): Flow<List<StepEntity>> =
         stepDao.getStepsByRoutineId(routineId)
 
-    /** 루틴 삭제 + 스텝 삭제 */
     suspend fun deleteRoutine(id: Long) {
         routineDao.deleteRoutineById(id)
         stepDao.deleteStepsByRoutineId(id)
@@ -43,21 +42,17 @@ class RoutineRepository @Inject constructor(
         deleteRoutine(routine.id)
     }
 
-    /** 루틴 + 스텝 저장 */
     @Transaction
     suspend fun saveRoutineWithSteps(
         routine: RoutineEntity,
         steps: List<StepEntity>
     ): Long {
-
         val routineId = routineDao.insertRoutine(routine)
 
         stepDao.deleteStepsByRoutineId(routineId)
-
-        val updatedSteps = steps.map { step ->
-            step.copy(routineId = routineId)
-        }
-        stepDao.insertSteps(updatedSteps)
+        stepDao.insertSteps(
+            steps.map { it.copy(routineId = routineId) }
+        )
 
         return routineId
     }

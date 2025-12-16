@@ -1,6 +1,9 @@
 package com.smwu.bigsister
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
 import dagger.hilt.android.HiltAndroidApp
 
 /**
@@ -10,8 +13,18 @@ import dagger.hilt.android.HiltAndroidApp
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
+        createNotificationChannel()
+    }
 
-        // 🗑️ 카카오맵 초기화 코드 삭제됨
-        // 이제 아무것도 안 적어도 됩니다!
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "routine_alarm_channel",
+                "루틴 알림",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
     }
 }

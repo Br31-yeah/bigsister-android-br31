@@ -30,4 +30,8 @@ interface ReservationDao {
         startDate: String,
         endDate: String
     ): Flow<List<ReservationEntity>>
+
+    //  예약 1개 조회 (알림 취소용)
+    @Query("SELECT * FROM reservation_table WHERE id = :id LIMIT 1")
+    suspend fun getReservationById(id: Long): ReservationEntity?
 }

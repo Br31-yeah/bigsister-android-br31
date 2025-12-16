@@ -1,6 +1,6 @@
 package com.smwu.bigsister.ui.auth
 
-import com.smwu.bigsister.ui.viewmodel.LoginViewModel
+import com.smwu.bigsister.ui.viewModel.LoginViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button

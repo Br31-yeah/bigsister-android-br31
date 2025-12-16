@@ -5,10 +5,15 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
 
-    // --- Hilt & KSP (두 브랜치 모두 사용) ---
+    // --- Hilt & KSP ---
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.ksp) apply false
 
-    // --- Firebase Google Services (DB 브랜치에 있었음) ---
+    // --- Firebase Google Services (DB 브랜치에서 사용) ---
     id("com.google.gms.google-services") version "4.4.2" apply false
+}
+
+// 선택: 공통 clean task
+tasks.register("clean", Delete::class) {
+    delete(rootProject.buildDir)
 }

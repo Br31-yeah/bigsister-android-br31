@@ -34,7 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.smwu.bigsister.data.network.StationInfo
-import com.smwu.bigsister.ui.viewmodel.RoutineViewModel
+import com.smwu.bigsister.ui.viewModel.RoutineViewModel
 
 @Composable
 fun StationSearchScreen(

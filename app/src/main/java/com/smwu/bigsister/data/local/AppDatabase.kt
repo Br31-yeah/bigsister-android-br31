@@ -17,7 +17,7 @@ import com.smwu.bigsister.data.local.dao.UserDao
         CompletionEntity::class,
         UserEntity::class
     ],
-    version = 3,  // UserEntity 추가로 인한 버전 변경
+    version = 4,  // UserEntity 추가로 인한 버전 변경
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

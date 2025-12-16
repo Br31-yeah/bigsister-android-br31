@@ -1,4 +1,4 @@
-package com.smwu.bigsister.ui.viewmodel
+package com.smwu.bigsister.ui.viewModel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

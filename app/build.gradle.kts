@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    id("com.google.gms.google-services") // Firebase용 (DB 브랜치 쪽)
+    id("com.google.gms.google-services") // Firebase용
 }
 
 android {
@@ -38,6 +38,7 @@ android {
         // ⬇ UI2에서 가져온 desugaring 옵션
         isCoreLibraryDesugaringEnabled = true
     }
+
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -83,7 +84,7 @@ dependencies {
     // ---- DataStore ----
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.datastore:datastore-core:1.1.1")
-    // (원하면 여기 나중에 libs.datastore.preferences 로 교체 가능)
+    // (원하면 나중에 libs.datastore-preferences로 리팩터링 가능)
 
     // ---- Firebase ----
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
@@ -124,4 +125,17 @@ dependencies {
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.gson)
+
+    // ===============================
+    //   ▼▼ Stats 브랜치에서 가져온 추가들 ▼▼
+    // ===============================
+
+    // ✅ OkHttp Logging Interceptor
+    implementation(libs.okhttp.logging)
+
+    // ✅ MPAndroidChart (StatsScreen 차트용)
+    implementation(libs.mpandroidchart)
+
+    //알림
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }

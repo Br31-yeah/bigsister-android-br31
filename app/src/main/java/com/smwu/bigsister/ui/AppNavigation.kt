@@ -32,9 +32,11 @@ import com.smwu.bigsister.ui.reservation.ReservationAddScreen
 import com.smwu.bigsister.ui.routine.RoutineAddScreen
 import com.smwu.bigsister.ui.routine.RoutineListScreen
 import com.smwu.bigsister.ui.settings.SettingsScreen
+import com.smwu.bigsister.ui.stats.StatsScreen
 
-
-// ---------------------- Bottom Nav Items ----------------------
+/* ------------------------------------------------------------
+   Bottom Navigation Items 정의
+------------------------------------------------------------ */
 sealed class BottomNavItem(
     val route: String,
     val label: String,
@@ -46,8 +48,9 @@ sealed class BottomNavItem(
     object Settings : BottomNavItem("settings", "설정", Icons.Default.Settings)
 }
 
-
-// ---------------------- Main Navigation ----------------------
+/* ------------------------------------------------------------
+   App Navigation (최신 버전)
+------------------------------------------------------------ */
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -62,7 +65,6 @@ fun AppNavigation() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // 하단 바를 표시할 화면들만
     val showBottomBar = bottomNavItems.any { item ->
         currentRoute?.startsWith(item.route) == true
     }
@@ -106,7 +108,7 @@ fun AppNavigation() {
                 startDestination = "onboarding"
             ) {
 
-                // ------------------ 온보딩 ------------------
+                /* ------------------ 온보딩 ------------------ */
                 composable("onboarding") {
                     OnboardingFlow(
                         onComplete = {
@@ -117,7 +119,7 @@ fun AppNavigation() {
                     )
                 }
 
-                // ------------------ 홈 ------------------
+                /* ------------------ 홈 ------------------ */
                 composable("home") {
                     HomeScreen(
                         onNavigateToReservationAdd = { date ->
@@ -132,7 +134,7 @@ fun AppNavigation() {
                     )
                 }
 
-                // ------------------ 루틴 목록 ------------------
+                /* ------------------ 루틴 목록 ------------------ */
                 composable("routine_list") {
                     RoutineListScreen(
                         onAddRoutineClick = { navController.navigate("routine_builder") },
@@ -145,7 +147,7 @@ fun AppNavigation() {
                     )
                 }
 
-                // ------------------ 루틴 추가/수정 ------------------
+                /* ---------------- 루틴 추가/수정 ---------------- */
                 composable(
                     route = "routine_builder?id={routineId}",
                     arguments = listOf(
@@ -164,7 +166,7 @@ fun AppNavigation() {
                     )
                 }
 
-                // ------------------ 예약 추가 ------------------
+                /* ------------------ 예약 추가 ------------------ */
                 composable(
                     route = "routine_reservation?date={date}",
                     arguments = listOf(
@@ -183,20 +185,22 @@ fun AppNavigation() {
                     )
                 }
 
-                // ------------------ 실행 모드 ------------------
+                /* ------------------ 실행 모드 ------------------ */
                 composable(
                     route = "live_mode/{routineId}",
-                    arguments = listOf(navArgument("routineId") { type = NavType.IntType })
+                    arguments = listOf(
+                        navArgument("routineId") { type = NavType.IntType }
+                    )
                 ) {
                     LiveModeScreen(
                         onFinishRoutine = { navController.popBackStack() }
                     )
                 }
 
-                // ------------------ 통계 ------------------
-               // composable("stats") { StatsScreen() }
+                /* ------------------ 통계 ------------------ */
+                composable("stats") { StatsScreen() }
 
-                // ------------------ 설정 ------------------
+                /* ------------------ 설정 ------------------ */
                 composable("settings") {
                     SettingsScreen(
                         onNavigateBack = { navController.popBackStack() }

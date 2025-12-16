@@ -1,4 +1,4 @@
-package com.smwu.bigsister.ui.viewmodel
+package com.smwu.bigsister.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

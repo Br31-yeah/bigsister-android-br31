@@ -48,7 +48,7 @@ import com.smwu.bigsister.ui.theme.MintConfirm
 import com.smwu.bigsister.ui.theme.PurpleLight
 import com.smwu.bigsister.ui.theme.PurplePrimary
 import com.smwu.bigsister.ui.theme.TextGray
-import com.smwu.bigsister.ui.viewmodel.RoutineViewModel
+import com.smwu.bigsister.ui.viewModel.RoutineViewModel
 
 @Composable
 fun RoutineListScreen(

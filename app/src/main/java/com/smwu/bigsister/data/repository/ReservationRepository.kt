@@ -20,6 +20,15 @@ class ReservationRepository @Inject constructor(
         val startTime: String
     )
 
+    /** 예약 1개 조회 */
+    suspend fun getReservationById(id: Long): ReservationEntity? =
+        reservationDao.getReservationById(id)
+
+    /** 특정 루틴 + 스텝 JOIN 조회 (알림 스케줄링에서 필요) */
+    suspend fun getRoutineWithSteps(routineId: Long) =
+        routineDao.getRoutineWithSteps(routineId)
+
+
     /** 날짜별 예약 목록 */
     fun getReservationsByDate(date: String): Flow<List<ReservationEntity>> =
         reservationDao.getReservationsForDate(date)   // ← 여기 수정됨!

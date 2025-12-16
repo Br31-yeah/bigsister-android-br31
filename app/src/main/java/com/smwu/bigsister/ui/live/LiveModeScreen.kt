@@ -36,7 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.smwu.bigsister.ui.viewmodel.LiveModeViewModel
+import com.smwu.bigsister.ui.viewModel.LiveModeViewModel
 
 /**
  * '루틴 실행 화면' (Live Mode) (PDF No. 7) [cite: 376]

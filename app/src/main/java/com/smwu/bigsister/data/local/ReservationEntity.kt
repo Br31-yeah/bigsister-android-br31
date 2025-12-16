@@ -32,6 +32,9 @@ data class ReservationEntity(
     /** HH:mm 시작 시간 */
     val startTime: String,
 
-    /** 종료 시간 (선택사항) */
-    val endTime: String? = null
+    /** 종료 시간 (선택) */
+    val endTime: String? = null,
+
+    /** UI 표시용 루틴 제목 */
+    val routineTitle: String
 )

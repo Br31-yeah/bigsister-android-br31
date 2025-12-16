@@ -28,6 +28,11 @@ datastore = "1.1.1"
 retrofit = "2.9.0"
 gson = "2.10.1"
 
+# ▼ stats 브랜치에서 추가된 것들
+okhttp = "4.11.0"
+mpandroidchart = "v3.1.0"
+
+
 [libraries]
 # Core
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -40,7 +45,6 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 # Lifecycle
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
-
 # (ui2에서 쓰던 alias도 지원 – 혹시 모를 참조 대비)
 lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 
@@ -85,6 +89,13 @@ datastore-preferences = { group = "androidx.datastore", name = "datastore-prefer
 retrofit-core = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+
+# OkHttp Logging (stats 브랜치)
+okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+
+# MPAndroidChart (stats 브랜치)
+mpandroidchart = { group = "com.github.PhilJay", name = "MPAndroidChart", version.ref = "mpandroidchart" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
