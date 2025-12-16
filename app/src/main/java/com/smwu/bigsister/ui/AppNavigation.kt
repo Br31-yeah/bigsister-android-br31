@@ -28,6 +28,7 @@ import androidx.navigation.navArgument
 import com.smwu.bigsister.ui.home.HomeScreen
 import com.smwu.bigsister.ui.intro.OnboardingFlow
 import com.smwu.bigsister.ui.live.LiveModeScreen
+import com.smwu.bigsister.ui.map.StationSearchScreen
 import com.smwu.bigsister.ui.reservation.ReservationAddScreen
 import com.smwu.bigsister.ui.routine.RoutineAddScreen
 import com.smwu.bigsister.ui.routine.RoutineListScreen
@@ -49,7 +50,7 @@ sealed class BottomNavItem(
 }
 
 /* ------------------------------------------------------------
-   App Navigation (Routing Only)
+   App Navigation
 ------------------------------------------------------------ */
 @Composable
 fun AppNavigation() {
@@ -65,6 +66,7 @@ fun AppNavigation() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // BottomBar 표시 여부
     val showBottomBar = bottomNavItems.any { item ->
         currentRoute?.startsWith(item.route) == true
     }
@@ -80,13 +82,6 @@ fun AppNavigation() {
 
                         NavigationBarItem(
                             selected = selected,
-                            icon = { Icon(item.icon, contentDescription = item.label) },
-                            label = { Text(item.label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xFF8B8FD9),
-                                selectedTextColor = Color(0xFF8B8FD9),
-                                indicatorColor = Color(0xFFE3E4FA)
-                            ),
                             onClick = {
                                 navController.navigate(item.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
@@ -95,13 +90,21 @@ fun AppNavigation() {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            }
+                            },
+                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            label = { Text(item.label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color(0xFF8B8FD9),
+                                selectedTextColor = Color(0xFF8B8FD9),
+                                indicatorColor = Color(0xFFE3E4FA)
+                            )
                         )
                     }
                 }
             }
         }
     ) { innerPadding ->
+
         Box(modifier = Modifier.padding(innerPadding)) {
 
             NavHost(
@@ -150,7 +153,7 @@ fun AppNavigation() {
                     )
                 }
 
-                /* ---------------- Routine Add / Edit ---------------- */
+                /* ------------------ Routine Add / Edit ------------------ */
                 composable(
                     route = "routine_builder?id={routineId}",
                     arguments = listOf(
@@ -167,6 +170,29 @@ fun AppNavigation() {
                     RoutineAddScreen(
                         routineId = routineId,
                         onNavigateBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                /* ------------------ Station Search (출발지/도착지) ------------------ */
+                composable(
+                    route = "station_search?type={type}",
+                    arguments = listOf(
+                        navArgument("type") {
+                            type = NavType.StringType
+                            defaultValue = "origin"
+                        }
+                    )
+                ) {
+                    StationSearchScreen(
+                        onDismiss = {
+                            navController.popBackStack()
+                        },
+                        onStationSelected = { station ->
+                            // TODO: RoutineViewModel에 선택된 역 반영
+                            // viewModel.setOriginStation(station) / setDestinationStation(station)
+
                             navController.popBackStack()
                         }
                     )

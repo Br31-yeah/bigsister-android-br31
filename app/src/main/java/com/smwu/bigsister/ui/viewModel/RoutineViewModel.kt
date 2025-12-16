@@ -46,9 +46,13 @@ class RoutineViewModel @Inject constructor(
     private val _editState = MutableStateFlow(RoutineEditState())
     val editState = _editState.asStateFlow()
 
+    /** UI 전용 임시 Step ID (DB autoGenerate와 충돌 방지용) */
+    private var tempStepId = -1L
+
     fun loadRoutineForEdit(routineId: Long?) {
         if (routineId == null) {
             _editState.value = RoutineEditState()
+            tempStepId = -1L
             return
         }
 
@@ -100,9 +104,11 @@ class RoutineViewModel @Inject constructor(
         _editState.update {
             it.copy(
                 steps = it.steps + StepEntity(
-                    routineId = 0L,
+                    id = tempStepId--,                     // ⭐ UI 임시 ID
+                    routineId = it.routineId ?: 0L,
                     name = "",
-                    duration = 0L
+                    duration = 0L,
+                    orderIndex = it.steps.size
                 )
             )
         }
@@ -112,10 +118,12 @@ class RoutineViewModel @Inject constructor(
         _editState.update {
             it.copy(
                 steps = it.steps + StepEntity(
-                    routineId = 0L,
+                    id = tempStepId--,                     // ⭐ UI 임시 ID
+                    routineId = it.routineId ?: 0L,
                     name = "이동",
                     duration = 0L,
-                    isTransport = true
+                    isTransport = true,
+                    orderIndex = it.steps.size
                 )
             )
         }
@@ -129,12 +137,17 @@ class RoutineViewModel @Inject constructor(
         viewModelScope.launch {
             val state = _editState.value
 
+            // DB insert용 Step 목록 (id 초기화)
+            val stepsForSave = state.steps.map {
+                it.copy(id = 0L)
+            }
+
             routineRepository.saveRoutineWithSteps(
                 RoutineEntity(
                     id = state.routineId ?: 0L,
                     title = state.title
                 ),
-                state.steps
+                stepsForSave
             )
 
             onFinished()

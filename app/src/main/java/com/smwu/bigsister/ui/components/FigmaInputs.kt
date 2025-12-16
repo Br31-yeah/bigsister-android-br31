@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.unit.dp
 import com.smwu.bigsister.ui.theme.InputBg
 import com.smwu.bigsister.ui.theme.MutedForeground
@@ -25,7 +26,10 @@ fun FigmaInput(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            // ⭐⭐⭐ 이 한 줄이 핵심 ⭐⭐⭐
+            .pointerInteropFilter { false },
         placeholder = { Text(placeholder, color = MutedForeground) },
         shape = RoundedCornerShape(8.dp),
         singleLine = singleLine,
@@ -34,7 +38,7 @@ fun FigmaInput(
             focusedContainerColor = InputBg,
             unfocusedContainerColor = InputBg,
             focusedBorderColor = Primary,
-            unfocusedBorderColor = Color.Transparent, // 평소엔 테두리 없음 (shadow 스타일)
+            unfocusedBorderColor = Color.Transparent,
             cursorColor = Primary
         )
     )
