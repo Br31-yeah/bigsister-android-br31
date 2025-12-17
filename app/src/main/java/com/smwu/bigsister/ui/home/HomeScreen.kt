@@ -1,6 +1,7 @@
 package com.smwu.bigsister.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -58,7 +59,6 @@ fun HomeScreen(
     val selectedDate by homeViewModel.selectedDate.collectAsState()
     val todaySchedules by homeViewModel.todaySchedules.collectAsState()
 
-    // 📅 날짜 선택 다이얼로그 표시 여부
     var showDatePicker by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -84,31 +84,37 @@ fun HomeScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            /* ---------- 오늘 일정 ---------- */
-            if (todaySchedules.isEmpty()) {
-                EmptyRoutineState {
-                    onNavigateToReservationAdd(selectedDate.toString())
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(todaySchedules) { reservation ->
-                        ReservationCard(
-                            reservation = reservation,
-                            onStart = {
-                                // TODO: 즉시 시작 (LiveMode 연결 예정)
-                            },
-                            onCancel = {
-                                reservationViewModel.deleteReservation(reservation.id)
-                            }
-                        )
+            /* ---------- 오늘 일정 (핵심 영역) ---------- */
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                if (todaySchedules.isEmpty()) {
+                    EmptyRoutineState {
+                        onNavigateToReservationAdd(selectedDate.toString())
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(todaySchedules) { reservation ->
+                            ReservationCard(
+                                reservation = reservation,
+                                onStart = {
+                                    // TODO: 즉시 시작 (LiveMode 연결 예정)
+                                },
+                                onCancel = {
+                                    reservationViewModel.deleteReservation(reservation.id)
+                                }
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
 
             /* ---------- 예약 추가 버튼 ---------- */
             Button(
