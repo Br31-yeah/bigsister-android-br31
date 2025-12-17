@@ -1,1 +1,2 @@
-# Big Sister (모바일소프트웨어)
+# bigsister-android
+2025 bigsister android project
