@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -28,12 +29,12 @@ import androidx.navigation.navArgument
 import com.smwu.bigsister.ui.home.HomeScreen
 import com.smwu.bigsister.ui.intro.OnboardingFlow
 import com.smwu.bigsister.ui.live.LiveModeScreen
-import com.smwu.bigsister.ui.map.StationSearchScreen
 import com.smwu.bigsister.ui.reservation.ReservationAddScreen
 import com.smwu.bigsister.ui.routine.RoutineAddScreen
 import com.smwu.bigsister.ui.routine.RoutineListScreen
 import com.smwu.bigsister.ui.settings.SettingsScreen
 import com.smwu.bigsister.ui.stats.StatsScreen
+import com.smwu.bigsister.ui.viewModel.HomeViewModel
 
 /* ------------------------------------------------------------
    Bottom Navigation Items
@@ -66,7 +67,6 @@ fun AppNavigation() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // BottomBar 표시 여부
     val showBottomBar = bottomNavItems.any { item ->
         currentRoute?.startsWith(item.route) == true
     }
@@ -123,9 +123,13 @@ fun AppNavigation() {
                     )
                 }
 
-                /* ------------------ Home ------------------ */
-                composable("home") {
+                /* ------------------ Home (🔥 핵심 수정) ------------------ */
+                composable("home") { backStackEntry ->
+                    val homeViewModel: HomeViewModel =
+                        hiltViewModel(backStackEntry)
+
                     HomeScreen(
+                        homeViewModel = homeViewModel,
                         onNavigateToReservationAdd = { date ->
                             navController.navigate("routine_reservation?date=$date")
                         },
@@ -170,29 +174,6 @@ fun AppNavigation() {
                     RoutineAddScreen(
                         routineId = routineId,
                         onNavigateBack = {
-                            navController.popBackStack()
-                        }
-                    )
-                }
-
-                /* ------------------ Station Search (출발지/도착지) ------------------ */
-                composable(
-                    route = "station_search?type={type}",
-                    arguments = listOf(
-                        navArgument("type") {
-                            type = NavType.StringType
-                            defaultValue = "origin"
-                        }
-                    )
-                ) {
-                    StationSearchScreen(
-                        onDismiss = {
-                            navController.popBackStack()
-                        },
-                        onStationSelected = { station ->
-                            // TODO: RoutineViewModel에 선택된 역 반영
-                            // viewModel.setOriginStation(station) / setDestinationStation(station)
-
                             navController.popBackStack()
                         }
                     )

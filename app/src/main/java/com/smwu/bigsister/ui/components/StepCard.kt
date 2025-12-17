@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,17 +47,20 @@ fun StepCard(
 
             Spacer(Modifier.width(12.dp))
 
-            FigmaInput(
-                value = step.duration.toString(),
-                onValueChange = {
-                    viewModel.updateStep(
-                        step.copy(duration = it.toLongOrNull() ?: 0L)
-                    )
-                },
-                placeholder = "분",
-                modifier = Modifier.width(80.dp),
-                singleLine = true
-            )
+            // ⏱ 일반 Step만 시간 직접 입력 가능
+            if (!step.isTransport) {
+                FigmaInput(
+                    value = step.baseDuration.toString(),
+                    onValueChange = {
+                        viewModel.updateStep(
+                            step.copy(baseDuration = it.toLongOrNull() ?: 0L)
+                        )
+                    },
+                    placeholder = "분",
+                    modifier = Modifier.width(80.dp),
+                    singleLine = true
+                )
+            }
 
             Spacer(Modifier.width(4.dp))
 
@@ -118,10 +122,22 @@ fun StepCard(
 
             Spacer(Modifier.height(12.dp))
 
+            // ⏱ 기준 vs 변경 시간 표시
+            val base = step.baseDuration
+            val current = step.calculatedDuration ?: base
+            val diff = current - base
+
             Text(
-                text = step.calculatedDuration?.let { "예상 소요시간 약 ${it}분" } ?: "시간 계산 필요",
+                text =
+                    if (base == 0L) {
+                        "시간 계산 필요"
+                    } else if (diff == 0L) {
+                        "예상 소요시간 약 ${base}분"
+                    } else {
+                        "예상 ${current}분 (기준 ${base}분, ${if (diff > 0) "+" else ""}${diff}분)"
+                    },
                 fontSize = 14.sp,
-                color = MutedForeground
+                color = if (diff != 0L) Color.Red else MutedForeground
             )
         }
 

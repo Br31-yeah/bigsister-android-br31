@@ -39,7 +39,7 @@ import com.smwu.bigsister.ui.viewModel.ReservationViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    homeViewModel: HomeViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel,
     reservationViewModel: ReservationViewModel = hiltViewModel(),
     onNavigateToReservationAdd: (String) -> Unit,
     onNavigateToRoutineList: () -> Unit,
@@ -71,7 +71,6 @@ fun HomeScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // ───────── 메인 콘텐츠 ─────────
             if (todaySchedules.isEmpty()) {
                 EmptyRoutineState {
                     onNavigateToReservationAdd(selectedDate.toString())
@@ -84,9 +83,7 @@ fun HomeScreen(
                     items(todaySchedules) { reservation ->
                         ReservationCard(
                             reservation = reservation,
-                            onStart = {
-                                // TODO: 즉시 시작
-                            },
+                            onStart = { /* TODO */ },
                             onCancel = {
                                 reservationViewModel.deleteReservation(reservation.id)
                             }
@@ -95,9 +92,8 @@ fun HomeScreen(
                 }
             }
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
 
-            // ───────── ✅ 예약 추가 버튼 복원 ─────────
             Button(
                 onClick = {
                     onNavigateToReservationAdd(selectedDate.toString())

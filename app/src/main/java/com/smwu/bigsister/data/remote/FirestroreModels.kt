@@ -25,14 +25,16 @@ data class StepDocument(
     val routineId: Long = 0L,
     val orderIndex: Int = 0,
     val name: String = "",
-    val duration: Long = 0
+    val baseDuration: Long = 0L,
+    val calculatedDuration: Long? = null,
 ) {
     constructor(entity: StepEntity) : this(
         id = entity.id,
         routineId = entity.routineId,
         orderIndex = entity.orderIndex,
         name = entity.name,
-        duration = entity.duration
+        baseDuration = entity.baseDuration,
+        calculatedDuration = entity.calculatedDuration
     )
 }
 

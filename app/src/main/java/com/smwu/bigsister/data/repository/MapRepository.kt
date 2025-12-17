@@ -114,11 +114,19 @@ class MapRepository @Inject constructor(
     ──────────────────────────────── */
 
     suspend fun searchStationByName(name: String): List<StationInfo> {
+        Log.d(
+            "ODSAY_KEY_CHECK",
+            "BuildConfig.ODSAY_API_KEY = '${BuildConfig.ODSAY_API_KEY}'"
+        )
+
         return try {
             val response = odsayService.searchStation(
-                apiKey = odsayApiKey,
+                apiKey = BuildConfig.ODSAY_API_KEY,
                 stationName = name
             )
+
+            Log.d("ODSAY_RESPONSE", "response = $response")
+
             response.result?.station ?: emptyList()
         } catch (e: Exception) {
             Log.e("MapRepository", "ODsay 역 검색 실패", e)

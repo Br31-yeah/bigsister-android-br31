@@ -219,7 +219,9 @@ fun ReservationRoutineCard(
     val routine = routineWithSteps.routine
     val steps = routineWithSteps.steps
 
-    val totalMinutes = steps.sumOf { it.duration }
+    val totalMinutes = steps.sumOf {
+        it.calculatedDuration ?: it.baseDuration
+    }
     val totalTimeStr =
         if (totalMinutes >= 60) "${totalMinutes / 60}시간 ${totalMinutes % 60}분"
         else "${totalMinutes}분"

@@ -18,9 +18,10 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
-/**
- * '루틴 실행 화면'을 위한 UI 상태
- */
+/* ────────────────────────────────
+   UI STATE
+──────────────────────────────── */
+
 data class LiveModeUiState(
     val routineTitle: String = "",
     val currentStepIndex: Int = 0,
@@ -32,6 +33,10 @@ data class LiveModeUiState(
     val isFinished: Boolean = false,
     val isLoading: Boolean = true
 )
+
+/* ────────────────────────────────
+   VIEW MODEL
+──────────────────────────────── */
 
 @HiltViewModel
 class LiveModeViewModel @Inject constructor(
@@ -45,36 +50,46 @@ class LiveModeViewModel @Inject constructor(
 
     private var timerJob: Job? = null
     private var allSteps: List<StepEntity> = emptyList()
+
     private var routineId: Long = 0L
     private var routineStartTime: Long = 0L
     private var plannedTotalDuration: Long = 0L
 
+    /* ────────────────────────────────
+       INIT
+    ──────────────────────────────── */
+
     init {
-        val navRoutineId = savedStateHandle.get<Int>("routineId")?.toLong()
-        if (navRoutineId != null) {
-            loadRoutine(navRoutineId)
-        } else {
-            _uiState.update { it.copy(isLoading = false, isFinished = true) }
+        savedStateHandle.get<Int>("routineId")?.toLong()?.let {
+            loadRoutine(it)
+        } ?: run {
+            _uiState.update {
+                it.copy(isLoading = false, isFinished = true)
+            }
         }
     }
 
-    /**
-     * 루틴 로딩
-     */
+    /* ────────────────────────────────
+       ROUTINE LOAD
+    ──────────────────────────────── */
+
     private fun loadRoutine(id: Long) {
         routineId = id
         routineStartTime = System.currentTimeMillis()
 
         viewModelScope.launch {
-            val routineWithSteps = routineRepository.getRoutineWithSteps(id)
-
-            if (routineWithSteps == null || routineWithSteps.steps.isEmpty()) {
-                _uiState.update { it.copy(isLoading = false, isFinished = true) }
-                return@launch
-            }
+            val routineWithSteps =
+                routineRepository.getRoutineWithSteps(id)
+                    ?: run {
+                        _uiState.update {
+                            it.copy(isLoading = false, isFinished = true)
+                        }
+                        return@launch
+                    }
 
             allSteps = routineWithSteps.steps
-            plannedTotalDuration = allSteps.sumOf { it.duration * 60 * 1000L }
+            plannedTotalDuration =
+                allSteps.sumOf { it.calculatedDuration ?: it.baseDuration }
 
             _uiState.update {
                 it.copy(
@@ -88,9 +103,10 @@ class LiveModeViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 특정 Step 시작
-     */
+    /* ────────────────────────────────
+       STEP CONTROL
+    ──────────────────────────────── */
+
     private fun startStep(stepIndex: Int) {
         if (stepIndex >= allSteps.size) {
             finishRoutine()
@@ -98,7 +114,8 @@ class LiveModeViewModel @Inject constructor(
         }
 
         val step = allSteps[stepIndex]
-        val durationMillis = (step.duration * 60 * 1000L)
+        val durationMinutes = step.calculatedDuration ?: step.baseDuration
+        val durationMillis = durationMinutes * 60_000L
 
         _uiState.update {
             it.copy(
@@ -113,9 +130,6 @@ class LiveModeViewModel @Inject constructor(
         startTimer(durationMillis)
     }
 
-    /**
-     * 타이머 시작
-     */
     private fun startTimer(durationInMillis: Long) {
         timerJob?.cancel()
         var remaining = durationInMillis
@@ -126,50 +140,43 @@ class LiveModeViewModel @Inject constructor(
                 remaining -= 1000
 
                 if (remaining >= 0) {
-                    _uiState.update { it.copy(remainingTimeInMillis = remaining) }
+                    _uiState.update {
+                        it.copy(remainingTimeInMillis = remaining)
+                    }
                 } else {
-                    val overtime = -remaining
-
                     _uiState.update {
                         it.copy(
                             remainingTimeInMillis = 0,
                             isOvertime = true,
-                            overtimeInMillis = overtime
+                            overtimeInMillis = -remaining
                         )
-                    }
-
-                    if (overtime % 10000L == 0L) {
-                        // ttsManager.speak("아직도 안 끝났어?")
                     }
                 }
             }
         }
     }
 
-    /**
-     * 완료 버튼
-     */
+    /* ────────────────────────────────
+       UI ACTIONS
+    ──────────────────────────────── */
+
     fun completeStep() {
         timerJob?.cancel()
-        val next = _uiState.value.currentStepIndex + 1
-
-        if (next < _uiState.value.totalSteps) {
-            startStep(next)
-        } else {
-            finishRoutine()
-        }
+        startStep(_uiState.value.currentStepIndex + 1)
     }
 
     /**
-     * 건너뛰기
+     * 🔹 UI에서 호출하는 "건너뛰기"
+     * 현재는 완료와 동일한 동작
      */
     fun skipStep() {
         completeStep()
     }
 
-    /**
-     * 루틴 종료
-     */
+    /* ────────────────────────────────
+       FINISH
+    ──────────────────────────────── */
+
     private fun finishRoutine() {
         timerJob?.cancel()
         _uiState.update { it.copy(isFinished = true) }
@@ -177,17 +184,16 @@ class LiveModeViewModel @Inject constructor(
         viewModelScope.launch {
             val completionTime = System.currentTimeMillis()
             val totalTimeMillis = completionTime - routineStartTime
-            val wasLate = totalTimeMillis > plannedTotalDuration
 
-            val completionRecord = CompletionEntity(
-                routineId = routineId,
-                date = LocalDate.now().toString(),
-                completedAt = completionTime,
-                totalTime = (totalTimeMillis / 1000).toInt(),
-                wasLate = wasLate
+            completionRepository.insertCompletion(
+                CompletionEntity(
+                    routineId = routineId,
+                    date = LocalDate.now().toString(),
+                    completedAt = completionTime,
+                    totalTime = (totalTimeMillis / 1000).toInt(),
+                    wasLate = totalTimeMillis > plannedTotalDuration
+                )
             )
-
-            completionRepository.insertCompletion(completionRecord)
         }
     }
 

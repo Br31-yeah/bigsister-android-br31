@@ -24,11 +24,11 @@ class StepRepository @Inject constructor(
     fun calculateTotalDuration(routineId: Long): Flow<Long> =
         getStepsByRoutine(routineId)
             .map { steps ->
-                steps.sumOf { it.duration }
+                steps.sumOf { it.calculatedDuration ?: it.baseDuration }
             }
 
     /** ✅ suspend 버전 (HomeViewModel에서 쓰기 좋음) */
     suspend fun calculateTotalDurationOnce(routineId: Long): Long =
         getStepsByRoutineOnce(routineId)
-            .sumOf { it.duration }
+            .sumOf { it.calculatedDuration ?: it.baseDuration }
 }

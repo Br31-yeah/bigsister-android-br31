@@ -21,14 +21,15 @@ import com.smwu.bigsister.ui.viewModel.RoutineEditState
 fun RoutineSummaryCard(
     state: RoutineEditState
 ) {
-    val totalMinutes = state.steps.sumOf { it.duration }
+    // 기준 총 시간 (루틴 최초 생성/확정 시점)
+    val baseTotal = state.steps.sumOf { it.baseDuration }
 
-    val totalText =
-        if (totalMinutes >= 60) {
-            "${totalMinutes / 60}시간 ${totalMinutes % 60}분"
-        } else {
-            "${totalMinutes}분"
-        }
+    // 현재 총 시간 (최근 교통 정보 반영)
+    val currentTotal = state.steps.sumOf {
+        it.calculatedDuration ?: it.baseDuration
+    }
+
+    val diff = currentTotal - baseTotal
 
     Card(
         shape = RoundedCornerShape(20.dp),
@@ -38,17 +39,55 @@ fun RoutineSummaryCard(
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
         ) {
+
+            /* ───────── 왼쪽: 시간 요약 ───────── */
             Column {
-                Text("총 소요시간", color = TextGray)
-                Text(totalText, fontSize = 24.sp)
+                Text(
+                    text = "총 소요시간",
+                    color = TextGray,
+                    fontSize = 14.sp
+                )
+
+                Text(
+                    text = formatMinutes(currentTotal),
+                    fontSize = 24.sp
+                )
+
+                // 기준 대비 변경이 있을 때만 표시
+                if (diff != 0L) {
+                    Text(
+                        text = "기준 ${formatMinutes(baseTotal)} " +
+                                "(${if (diff > 0) "+" else ""}${diff}분)",
+                        fontSize = 14.sp,
+                        color = Color.Red
+                    )
+                }
             }
 
+            /* ───────── 오른쪽: 단계 수 ───────── */
             Column(horizontalAlignment = Alignment.End) {
-                Text("단계 수", color = TextGray)
-                Text("${state.steps.size}개", fontSize = 24.sp)
+                Text(
+                    text = "단계 수",
+                    color = TextGray,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = "${state.steps.size}개",
+                    fontSize = 24.sp
+                )
             }
         }
     }
 }
+
+/* ───────── 공용 포맷 함수 ───────── */
+
+private fun formatMinutes(minutes: Long): String =
+    if (minutes >= 60) {
+        "${minutes / 60}시간 ${minutes % 60}분"
+    } else {
+        "${minutes}분"
+    }

@@ -72,10 +72,7 @@ fun RoutineAddScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.Outlined.ArrowBack,
-                            contentDescription = "뒤로가기"
-                        )
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "뒤로가기")
                     }
                 }
             )
@@ -83,14 +80,12 @@ fun RoutineAddScreen(
         containerColor = Color.White
     ) { paddingValues ->
 
-        /* ================= 메인 화면 ================= */
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp)
         ) {
-
             /* ---------- 루틴 이름 ---------- */
             Text("루틴 이름", fontSize = 16.sp)
             Spacer(Modifier.height(8.dp))
@@ -114,7 +109,6 @@ fun RoutineAddScreen(
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
-
                     itemsIndexed(
                         items = state.steps,
                         key = { index, step ->
@@ -127,7 +121,7 @@ fun RoutineAddScreen(
                             onDelete = { viewModel.removeStep(step) },
                             onSearch = { type ->
                                 activeSearchStepId = step.id
-                                activeSearchType = type   // "FROM" / "TO"
+                                activeSearchType = type // "FROM" / "TO"
                             }
                         )
                     }
@@ -183,6 +177,7 @@ fun RoutineAddScreen(
                 }
             ) {
                 StationSearchScreen(
+                    viewModel = viewModel,   // ⭐ FIX: 반드시 전달
                     onDismiss = {
                         activeSearchStepId = null
                         activeSearchType = null

@@ -77,7 +77,11 @@ class RoutineViewModel @Inject constructor(
 
     fun updateStep(step: StepEntity) {
         _editState.update {
-            it.copy(steps = it.steps.map { s -> if (s.id == step.id) step else s })
+            it.copy(
+                steps = it.steps.map { s ->
+                    if (s.id == step.id) step else s
+                }
+            )
         }
     }
 
@@ -94,16 +98,10 @@ class RoutineViewModel @Inject constructor(
                     id = tempStepId--,
                     routineId = it.routineId ?: 0L,
                     name = "",
-                    duration = 0L,
+                    baseDuration = 0L,
                     orderIndex = it.steps.size
                 )
             )
-        }
-    }
-
-    fun deleteRoutine(routine: RoutineEntity) {
-        viewModelScope.launch {
-            routineRepository.deleteRoutine(routine)
         }
     }
 
@@ -114,11 +112,17 @@ class RoutineViewModel @Inject constructor(
                     id = tempStepId--,
                     routineId = it.routineId ?: 0L,
                     name = "이동",
-                    duration = 0L,
+                    baseDuration = 0L,
                     isTransport = true,
                     orderIndex = it.steps.size
                 )
             )
+        }
+    }
+
+    fun deleteRoutine(routine: RoutineEntity) {
+        viewModelScope.launch {
+            routineRepository.deleteRoutine(routine)
         }
     }
 
@@ -143,7 +147,7 @@ class RoutineViewModel @Inject constructor(
     }
 
     /* ────────────────────────────────
-       🚍 이동 시간 자동 계산 (핵심)
+       🚍 이동 시간 계산 (base / calculated 분리)
     ──────────────────────────────── */
 
     fun calculateDuration(step: StepEntity) {
@@ -156,11 +160,11 @@ class RoutineViewModel @Inject constructor(
         val fromCoord = from.substringAfter("|").split(",")
         val toCoord = to.substringAfter("|").split(",")
 
-        val fromLatLng = "${fromCoord[1]},${fromCoord[0]}" // lat,lng
+        val fromLatLng = "${fromCoord[1]},${fromCoord[0]}"
         val toLatLng = "${toCoord[1]},${toCoord[0]}"
 
         viewModelScope.launch {
-            val duration = when (mode) {
+            val newDuration = when (mode) {
                 "transit" -> {
                     mapRepository.getExpectedDuration(
                         fromString = from.substringAfter("|"),
@@ -179,13 +183,36 @@ class RoutineViewModel @Inject constructor(
                 else -> 0L
             }
 
-            updateStep(
-                step.copy(
-                    calculatedDuration = duration,
-                    duration = duration
-                )
-            )
+            val updated =
+                if (step.baseDuration == 0L) {
+                    // 최초 기준값 확정
+                    step.copy(
+                        baseDuration = newDuration,
+                        calculatedDuration = newDuration
+                    )
+                } else {
+                    // 새로고침
+                    step.copy(
+                        calculatedDuration = newDuration
+                    )
+                }
+
+            updateStep(updated)
         }
+    }
+
+    /* ────────────────────────────────
+    모든 이동 Step 교통 정보 새로고침
+──────────────────────────────── */
+
+    fun refreshAllTransportSteps() {
+        val steps = _editState.value.steps
+
+        steps
+            .filter { it.isTransport }
+            .forEach { step ->
+                calculateDuration(step)
+            }
     }
 
     /* ────────────────────────────────

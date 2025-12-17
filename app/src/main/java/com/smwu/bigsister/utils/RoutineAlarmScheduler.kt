@@ -14,18 +14,19 @@ object RoutineAlarmScheduler {
         routineStartMillis: Long,
         steps: List<StepEntity>
     ) {
-        val alarmManager = context.getSystemService(AlarmManager::class.java)
-
         var currentTime = routineStartMillis
 
         for (step in steps) {
+            val duration = step.calculatedDuration ?: step.baseDuration
+
             scheduleStepAlarm(
                 context = context,
                 timeMillis = currentTime,
                 title = "⏰ ${step.name}",
-                message = "${step.duration}분 동안 진행할 차례예요!"
+                message = "${duration}분 동안 진행할 차례예요!"
             )
-            currentTime += step.duration * 60_000L
+
+            currentTime += duration * 60_000L
         }
     }
 
@@ -48,7 +49,6 @@ object RoutineAlarmScheduler {
         )
 
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             timeMillis,
@@ -56,7 +56,14 @@ object RoutineAlarmScheduler {
         )
     }
 
-    fun cancelAllForRoutine(context: Context, routineId: Long) {
-        // 필요시 구현 가능 (현재는 예약 단위로 삭제 중)
+    /**
+     * 🔹 예약 삭제 시 호출
+     * 현재는 stub (컴파일 + 안정성 목적)
+     */
+    fun cancelAllForRoutine(
+        context: Context,
+        routineId: Long
+    ) {
+        // TODO: routineId 기준 알람 cancel 전략 구현
     }
 }

@@ -72,15 +72,16 @@ fun RoutineListScreen(
                 Text(
                     text = "내 루틴",
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    fontWeight = FontWeight.Bold
                 )
             }
 
             if (routineList.isEmpty()) {
                 item {
                     Box(
-                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("저장된 루틴이 없어요 😢", color = TextGray)
@@ -100,7 +101,9 @@ fun RoutineListScreen(
             item {
                 Button(
                     onClick = onAddRoutineClick,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PurpleLight,
@@ -123,19 +126,25 @@ fun RoutineCard(
     onDeleteClick: () -> Unit,
     onStartClick: () -> Unit
 ) {
-    val totalMinutes = data.steps.sumOf { it.duration }
+    val totalMinutes = data.steps.sumOf {
+        it.calculatedDuration ?: it.baseDuration
+    }
+
     val timeText =
-        if (totalMinutes >= 60) "${totalMinutes / 60}시간 ${totalMinutes % 60}분"
-        else "${totalMinutes}분"
+        if (totalMinutes >= 60)
+            "${totalMinutes / 60}시간 ${totalMinutes % 60}분"
+        else
+            "${totalMinutes}분"
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, Color(0xFFF2F2F7)),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(0.dp),
-        border = BorderStroke(1.dp, Color(0xFFF2F2F7))
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(Modifier.padding(20.dp)) {
+
             Row(verticalAlignment = Alignment.Top) {
                 Box(
                     modifier = Modifier
@@ -150,9 +159,17 @@ fun RoutineCard(
                 Spacer(Modifier.width(16.dp))
 
                 Column(Modifier.weight(1f)) {
-                    Text(data.routine.title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        data.routine.title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(Modifier.height(4.dp))
-                    Text("🕒 $timeText • ${data.steps.size}단계", fontSize = 14.sp, color = TextGray)
+                    Text(
+                        "🕒 $timeText • ${data.steps.size}단계",
+                        fontSize = 14.sp,
+                        color = TextGray
+                    )
                 }
 
                 Row {
@@ -169,10 +186,16 @@ fun RoutineCard(
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 data.steps.take(3).forEach { step ->
+                    val duration = step.calculatedDuration ?: step.baseDuration
+
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.DirectionsCar, contentDescription = null, tint = TextGray)
+                        Icon(
+                            Icons.Rounded.DirectionsCar,
+                            contentDescription = null,
+                            tint = TextGray
+                        )
                         Spacer(Modifier.width(8.dp))
-                        Text("${step.name} · ${step.duration}분", fontSize = 14.sp)
+                        Text("${step.name} · ${duration}분", fontSize = 14.sp)
                     }
                 }
             }
@@ -181,7 +204,9 @@ fun RoutineCard(
 
             Button(
                 onClick = onStartClick,
-                modifier = Modifier.width(120.dp).height(40.dp),
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(40.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MintConfirm)
             ) {
