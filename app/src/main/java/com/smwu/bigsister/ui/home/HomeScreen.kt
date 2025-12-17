@@ -43,7 +43,9 @@ fun HomeScreen(
     reservationViewModel: ReservationViewModel = hiltViewModel(),
     onNavigateToReservationAdd: (String) -> Unit,
     onNavigateToRoutineList: () -> Unit,
-    onNavigateToStats: () -> Unit
+    onNavigateToStats: () -> Unit,
+    // ✅ [추가] 이 줄을 꼭 추가해주세요! (콤마 주의)
+    onSettingsClick: () -> Unit
 ) {
     val selectedDate by homeViewModel.selectedDate.collectAsState()
     val todaySchedules by homeViewModel.todaySchedules.collectAsState()

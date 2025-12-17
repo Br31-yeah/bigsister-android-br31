@@ -3,9 +3,9 @@ package com.smwu.bigsister.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -44,7 +44,8 @@ sealed class BottomNavItem(
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
     object Home : BottomNavItem("home", "홈", Icons.Default.Home)
-    object Routine : BottomNavItem("routine_list", "루틴", Icons.Default.List)
+    // ✅ [수정] Warning 해결: Icons.Default.List -> Icons.AutoMirrored.Filled.List
+    object Routine : BottomNavItem("routine_list", "루틴", Icons.AutoMirrored.Filled.List)
     object Stats : BottomNavItem("stats", "통계", Icons.Default.DateRange)
     object Settings : BottomNavItem("settings", "설정", Icons.Default.Settings)
 }
@@ -53,7 +54,10 @@ sealed class BottomNavItem(
    App Navigation
 ------------------------------------------------------------ */
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    // ✅ [추가] RootNavigation에서 전달하는 로그아웃 기능을 받기 위한 파라미터
+    onLogOut: () -> Unit
+) {
     val navController = rememberNavController()
 
     val bottomNavItems = listOf(
@@ -66,7 +70,6 @@ fun AppNavigation() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // BottomBar 표시 여부
     val showBottomBar = bottomNavItems.any { item ->
         currentRoute?.startsWith(item.route) == true
     }
@@ -109,10 +112,10 @@ fun AppNavigation() {
 
             NavHost(
                 navController = navController,
-                startDestination = "onboarding"
+                startDestination = "home" // 로그인 후 진입이므로 home 시작
             ) {
-
-                /* ------------------ Onboarding ------------------ */
+                // Onboarding은 RootNavigation으로 이동했으므로 여기서 제거해도 되지만,
+                // 혹시 내부 이동용으로 남겨둔다면 유지.
                 composable("onboarding") {
                     OnboardingFlow(
                         onComplete = {
@@ -134,6 +137,9 @@ fun AppNavigation() {
                         },
                         onNavigateToStats = {
                             navController.navigate("stats")
+                        },
+                        onSettingsClick = {
+                            navController.navigate("settings")
                         }
                     )
                 }
@@ -149,6 +155,9 @@ fun AppNavigation() {
                         },
                         onStartRoutineClick = { id ->
                             navController.navigate("live_mode/$id")
+                        },
+                        onSettingsClick = {
+                            navController.navigate("settings")
                         }
                     )
                 }
@@ -175,7 +184,7 @@ fun AppNavigation() {
                     )
                 }
 
-                /* ------------------ Station Search (출발지/도착지) ------------------ */
+                /* ------------------ Station Search ------------------ */
                 composable(
                     route = "station_search?type={type}",
                     arguments = listOf(
@@ -190,9 +199,6 @@ fun AppNavigation() {
                             navController.popBackStack()
                         },
                         onStationSelected = { station ->
-                            // TODO: RoutineViewModel에 선택된 역 반영
-                            // viewModel.setOriginStation(station) / setDestinationStation(station)
-
                             navController.popBackStack()
                         }
                     )
@@ -243,7 +249,9 @@ fun AppNavigation() {
                     SettingsScreen(
                         onNavigateBack = {
                             navController.popBackStack()
-                        }
+                        },
+                        // ✅ [수정] 외부에서 받은 로그아웃 함수 연결
+                        onNavigateToLogin = onLogOut
                     )
                 }
             }

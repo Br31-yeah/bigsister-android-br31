@@ -7,6 +7,7 @@ import com.smwu.bigsister.data.local.CompletionEntity
 import com.smwu.bigsister.data.local.StepEntity
 import com.smwu.bigsister.data.repository.CompletionRepository
 import com.smwu.bigsister.data.repository.RoutineRepository
+import com.smwu.bigsister.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -37,6 +38,7 @@ data class LiveModeUiState(
 class LiveModeViewModel @Inject constructor(
     private val routineRepository: RoutineRepository,
     private val completionRepository: CompletionRepository,
+    private val userRepository: UserRepository, // ✅ [추가] 유저 ID 가져오기 위해 주입
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -179,11 +181,15 @@ class LiveModeViewModel @Inject constructor(
             val totalTimeMillis = completionTime - routineStartTime
             val wasLate = totalTimeMillis > plannedTotalDuration
 
+            // ✅ [수정] 현재 로그인된 유저 ID 가져오기
+            val currentUserId = userRepository.firebaseUser.value?.uid ?: ""
+
             val completionRecord = CompletionEntity(
                 routineId = routineId,
+                userId = currentUserId, // ✅ [추가] 유저 ID 저장
                 date = LocalDate.now().toString(),
                 completedAt = completionTime,
-                totalTime = (totalTimeMillis / 1000).toInt(),
+                totalTime = (totalTimeMillis / 1000), // ✅ [수정] Long 타입으로 저장 (toInt 제거)
                 wasLate = wasLate
             )
 

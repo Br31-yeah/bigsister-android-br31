@@ -1,5 +1,6 @@
 package com.smwu.bigsister.ui.settings
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,8 +17,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -38,23 +43,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.smwu.bigsister.ui.theme.GrayBg
 import com.smwu.bigsister.ui.theme.PurpleLight
 import com.smwu.bigsister.ui.theme.PurplePrimary
 import com.smwu.bigsister.ui.theme.TextGray
+import com.smwu.bigsister.ui.viewModel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToLogin: () -> Unit, // ✅ 추가됨: 로그아웃 시 이동
+    viewModel: SettingsViewModel = hiltViewModel() // ✅ 추가됨: 기능 연결
 ) {
-    // UI 상태 (나중엔 DataStore/ViewModel과 연결 필요)
+    val context = LocalContext.current
+
+    // UI 상태 (기존 코드 유지)
     var selectedType by remember { mutableStateOf("TSUNDERE") }
     var pushEnabled by remember { mutableStateOf(true) }
     var voiceEnabled by remember { mutableStateOf(false) }
+
+    // ✅ 추가됨: 회원탈퇴 다이얼로그 상태
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Color.White,
@@ -80,7 +95,7 @@ fun SettingsScreen(
         ) {
             Spacer(Modifier.height(8.dp))
 
-            // 1. 언니 타입 섹션
+            // 1. 언니 타입 섹션 (기존 유지)
             SectionContainer(title = "언니 타입") {
                 TypeOption(
                     title = "츤데레",
@@ -104,34 +119,101 @@ fun SettingsScreen(
                 )
             }
 
-            // 2. 알림 섹션
+            // 2. 알림 섹션 (기존 유지)
             SectionContainer(title = "알림") {
-                // 스위치 항목들
                 SwitchRow(text = "푸시 알림", subText = "기기에서 알림 받기", checked = pushEnabled, onCheckedChange = { pushEnabled = it })
                 Spacer(Modifier.height(24.dp))
                 SwitchRow(text = "음성 알림", subText = "텍스트 음성 변환 리마인더", checked = voiceEnabled, onCheckedChange = { voiceEnabled = it })
-
                 Spacer(Modifier.height(24.dp))
-
-                // 드롭다운 항목들 (모양만 구현)
                 DropdownRow(label = "강도", value = "보통 - 표준 알림")
                 Spacer(Modifier.height(16.dp))
                 DropdownRow(label = "타이밍", value = "마감 3분 전")
             }
 
-            // 3. 정보 섹션
+            // 3. 정보 섹션 (기존 유지)
             SectionContainer(title = "정보") {
                 InfoRow(label = "버전", value = "1.0.0")
                 Spacer(Modifier.height(16.dp))
                 InfoRow(label = "빌드", value = "2025.10.29")
             }
 
+            // ──────────────────────────────────────────────
+            // ✅ 4. 계정 섹션 (추가됨)
+            // ──────────────────────────────────────────────
+            SectionContainer(title = "계정") {
+                // 로그아웃
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            viewModel.logout {
+                                Toast.makeText(context, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
+                                onNavigateToLogin()
+                            }
+                        }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("로그아웃", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = TextGray, modifier = Modifier.size(20.dp))
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // 회원탈퇴
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDeleteDialog = true }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("회원탈퇴", fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.Red)
+                    Icon(Icons.Default.PersonRemove, contentDescription = null, tint = Color.Red, modifier = Modifier.size(20.dp))
+                }
+            }
+
             Spacer(Modifier.height(40.dp)) // 하단 여백
         }
     }
+
+    // ✅ 회원탈퇴 확인 다이얼로그
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("정말 탈퇴하시겠습니까?", fontWeight = FontWeight.Bold) },
+            text = { Text("계정을 삭제하면 저장된 모든 루틴 데이터가 영구적으로 삭제됩니다.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteAccount(
+                            onSuccess = {
+                                Toast.makeText(context, "탈퇴가 완료되었습니다.", Toast.LENGTH_SHORT).show()
+                                onNavigateToLogin()
+                            },
+                            onError = { errorMsg ->
+                                Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                            }
+                        )
+                    }
+                ) {
+                    Text("탈퇴하기", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("취소")
+                }
+            },
+            containerColor = Color.White
+        )
+    }
 }
 
-// [컴포넌트] 섹션 컨테이너 (흰색 박스 + 제목 없음, 그냥 그룹핑용)
+// [컴포넌트] 섹션 컨테이너 (기존 유지)
 @Composable
 fun SectionContainer(title: String, content: @Composable () -> Unit) {
     Column {
@@ -151,7 +233,7 @@ fun SectionContainer(title: String, content: @Composable () -> Unit) {
     }
 }
 
-// [컴포넌트] 언니 타입 선택 버튼
+// [컴포넌트] 언니 타입 선택 버튼 (기존 유지)
 @Composable
 fun TypeOption(title: String, desc: String, isSelected: Boolean, onClick: () -> Unit) {
     val bgColor = if (isSelected) PurpleLight else GrayBg
@@ -175,7 +257,7 @@ fun TypeOption(title: String, desc: String, isSelected: Boolean, onClick: () -> 
     }
 }
 
-// [컴포넌트] 스위치 행
+// [컴포넌트] 스위치 행 (기존 유지)
 @Composable
 fun SwitchRow(text: String, subText: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
@@ -200,7 +282,7 @@ fun SwitchRow(text: String, subText: String, checked: Boolean, onCheckedChange: 
     }
 }
 
-// [컴포넌트] 드롭다운 모양 행
+// [컴포넌트] 드롭다운 모양 행 (기존 유지)
 @Composable
 fun DropdownRow(label: String, value: String) {
     Column {
@@ -220,7 +302,7 @@ fun DropdownRow(label: String, value: String) {
     }
 }
 
-// [컴포넌트] 정보 행 (버전, 빌드)
+// [컴포넌트] 정보 행 (기존 유지)
 @Composable
 fun InfoRow(label: String, value: String) {
     Row(

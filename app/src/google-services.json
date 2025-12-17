@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "72637267376",
+    "project_id": "bigsister-32309",
+    "storage_bucket": "bigsister-32309.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72637267376:android:9519f0ab0383cf96212a75",
+        "android_client_info": {
+          "package_name": "com.smwu.bigsister"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUfquIfZ6INGl9TmnWLYwNXyweH03fe4I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
