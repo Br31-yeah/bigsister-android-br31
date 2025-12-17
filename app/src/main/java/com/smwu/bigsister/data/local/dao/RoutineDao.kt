@@ -13,9 +13,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RoutineDao {
 
-    @Query("SELECT * FROM routine_table")
-    fun getAllRoutines(): Flow<List<RoutineEntity>>
+    // ✅ [수정] 모든 루틴 조회 -> 내 루틴만 조회 (userId 필터 추가)
+    @Query("SELECT * FROM routine_table WHERE userId = :userId ORDER BY createdAt DESC")
+    fun getRoutinesByUserId(userId: String): Flow<List<RoutineEntity>>
 
+    // ID로 개별 조회는 그대로 둠 (이미 특정 루틴을 선택한 상태이므로)
     @Query("SELECT * FROM routine_table WHERE id = :id")
     fun getRoutineById(id: Long): Flow<RoutineEntity?>
 
@@ -33,7 +35,12 @@ interface RoutineDao {
     @Query("SELECT * FROM routine_table WHERE id = :routineId LIMIT 1")
     suspend fun getRoutineWithSteps(routineId: Long): RoutineWithSteps?
 
+    // ✅ [수정] 모든 루틴+스텝 조회 -> 내 것만 조회
     @Transaction
-    @Query("SELECT * FROM routine_table")
-    fun getAllRoutinesWithSteps(): Flow<List<RoutineWithSteps>>
+    @Query("SELECT * FROM routine_table WHERE userId = :userId")
+    fun getRoutinesWithStepsByUserId(userId: String): Flow<List<RoutineWithSteps>>
+
+    // ✅ [수정] 모든 데이터 삭제 -> 내 데이터만 삭제 (로그아웃/탈퇴 시 사용)
+    @Query("DELETE FROM routine_table WHERE userId = :userId")
+    suspend fun deleteRoutinesByUserId(userId: String)
 }

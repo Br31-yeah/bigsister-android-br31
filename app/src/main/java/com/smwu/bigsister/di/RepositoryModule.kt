@@ -1,50 +1,17 @@
 package com.smwu.bigsister.di
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import com.google.firebase.auth.FirebaseAuth
-import com.smwu.bigsister.data.local.dao.*
-import com.smwu.bigsister.data.repository.*
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
-
-    @Provides
-    @Singleton
-    fun provideRoutineRepository(
-        routineDao: RoutineDao,
-        stepDao: StepDao
-    ): RoutineRepository = RoutineRepository(routineDao, stepDao)
-
-    @Provides
-    @Singleton
-    fun provideReservationRepository(
-        reservationDao: ReservationDao,
-        routineDao: RoutineDao
-    ): ReservationRepository = ReservationRepository(reservationDao, routineDao)
-
-    @Provides
-    @Singleton
-    fun provideCompletionRepository(
-        completionDao: CompletionDao
-    ): CompletionRepository = CompletionRepository(completionDao)
-
-    @Provides
-    @Singleton
-    fun provideUserRepository(
-        auth: FirebaseAuth,
-        userDao: UserDao
-    ): UserRepository = UserRepository(auth, userDao)
-
-    @Provides
-    @Singleton
-    fun provideSettingsRepository(
-        dataStore: DataStore<Preferences>
-    ): SettingsRepository = SettingsRepository(dataStore)
+    /**
+     * [중요]
+     * RoutineRepository, UserRepository 등 모든 레포지토리 클래스에
+     * 이미 @Inject constructor(...)가 붙어있습니다.
+     * * 따라서 여기서 수동으로 @Provides 함수를 작성하면 "중복 바인딩" 에러가 발생합니다.
+     * Hilt가 알아서 @Inject 생성자를 찾아 주입하므로, 이 파일은 비워두는 것이 정답입니다!
+     */
 }

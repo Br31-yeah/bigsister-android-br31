@@ -26,7 +26,6 @@ class RoutineViewModel @Inject constructor(
     /* ────────────────────────────────
        루틴 목록
     ──────────────────────────────── */
-
     private val _routineListWithSteps =
         MutableStateFlow<List<RoutineWithSteps>>(emptyList())
     val routineListWithSteps = _routineListWithSteps.asStateFlow()
@@ -42,7 +41,6 @@ class RoutineViewModel @Inject constructor(
     /* ────────────────────────────────
        루틴 편집 상태
     ──────────────────────────────── */
-
     private val _editState = MutableStateFlow(RoutineEditState())
     val editState = _editState.asStateFlow()
 
@@ -70,18 +68,13 @@ class RoutineViewModel @Inject constructor(
     /* ────────────────────────────────
        편집 액션
     ──────────────────────────────── */
-
     fun updateTitle(title: String) {
         _editState.update { it.copy(title = title) }
     }
 
     fun updateStep(step: StepEntity) {
         _editState.update {
-            it.copy(
-                steps = it.steps.map { s ->
-                    if (s.id == step.id) step else s
-                }
-            )
+            it.copy(steps = it.steps.map { s -> if (s.id == step.id) step else s })
         }
     }
 
@@ -120,36 +113,43 @@ class RoutineViewModel @Inject constructor(
         }
     }
 
-    fun deleteRoutine(routine: RoutineEntity) {
-        viewModelScope.launch {
-            routineRepository.deleteRoutine(routine)
-        }
-    }
-
     /* ────────────────────────────────
-       저장
+       저장 (🔥 userId 통합 포인트)
     ──────────────────────────────── */
-
-    fun saveRoutine(onFinished: () -> Unit) {
+    fun saveRoutine(userId: String, onFinished: () -> Unit) {
         viewModelScope.launch {
             val state = _editState.value
 
+            val totalDuration =
+                state.steps.sumOf { it.calculatedDuration ?: it.baseDuration }
+
+            val routine = RoutineEntity(
+                id = state.routineId ?: 0L,
+                userId = userId,
+                title = state.title,
+                totalDuration = totalDuration,
+                isActive = true
+            )
+
             routineRepository.saveRoutineWithSteps(
-                RoutineEntity(
-                    id = state.routineId ?: 0L,
-                    title = state.title
-                ),
-                state.steps.map { it.copy(id = 0L) }
+                userId = userId,
+                routine = routine,
+                steps = state.steps.map { it.copy(id = 0L) }
             )
 
             onFinished()
         }
     }
 
-    /* ────────────────────────────────
-       🚍 이동 시간 계산 (base / calculated 분리)
-    ──────────────────────────────── */
+    fun deleteRoutine(routineId: Long) {
+        viewModelScope.launch {
+            routineRepository.deleteRoutineById(routineId)
+        }
+    }
 
+    /* ────────────────────────────────
+       🚍 이동 시간 계산
+    ──────────────────────────────── */
     fun calculateDuration(step: StepEntity) {
         if (!step.isTransport) return
 
@@ -160,41 +160,35 @@ class RoutineViewModel @Inject constructor(
         val fromCoord = from.substringAfter("|").split(",")
         val toCoord = to.substringAfter("|").split(",")
 
+        if (fromCoord.size < 2 || toCoord.size < 2) return
+
         val fromLatLng = "${fromCoord[1]},${fromCoord[0]}"
         val toLatLng = "${toCoord[1]},${toCoord[0]}"
 
         viewModelScope.launch {
             val newDuration = when (mode) {
-                "transit" -> {
+                "transit" ->
                     mapRepository.getExpectedDuration(
                         fromString = from.substringAfter("|"),
                         toString = to.substringAfter("|")
                     )
-                }
-
-                "walking", "driving" -> {
+                "walking", "driving" ->
                     mapRepository.getWalkingOrDrivingDuration(
                         fromLatLng = fromLatLng,
                         toLatLng = toLatLng,
                         mode = mode
                     )
-                }
-
                 else -> 0L
             }
 
             val updated =
                 if (step.baseDuration == 0L) {
-                    // 최초 기준값 확정
                     step.copy(
                         baseDuration = newDuration,
                         calculatedDuration = newDuration
                     )
                 } else {
-                    // 새로고침
-                    step.copy(
-                        calculatedDuration = newDuration
-                    )
+                    step.copy(calculatedDuration = newDuration)
                 }
 
             updateStep(updated)
@@ -202,23 +196,8 @@ class RoutineViewModel @Inject constructor(
     }
 
     /* ────────────────────────────────
-    모든 이동 Step 교통 정보 새로고침
-──────────────────────────────── */
-
-    fun refreshAllTransportSteps() {
-        val steps = _editState.value.steps
-
-        steps
-            .filter { it.isTransport }
-            .forEach { step ->
-                calculateDuration(step)
-            }
-    }
-
-    /* ────────────────────────────────
        역 검색
     ──────────────────────────────── */
-
     private val _searchResults =
         MutableStateFlow<List<StationInfo>>(emptyList())
     val searchResults = _searchResults.asStateFlow()

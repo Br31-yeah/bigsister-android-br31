@@ -3,9 +3,9 @@ package com.smwu.bigsister.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -29,12 +29,13 @@ import androidx.navigation.navArgument
 import com.smwu.bigsister.ui.home.HomeScreen
 import com.smwu.bigsister.ui.intro.OnboardingFlow
 import com.smwu.bigsister.ui.live.LiveModeScreen
+import com.smwu.bigsister.ui.map.StationSearchScreen
 import com.smwu.bigsister.ui.reservation.ReservationAddScreen
 import com.smwu.bigsister.ui.routine.RoutineAddScreen
 import com.smwu.bigsister.ui.routine.RoutineListScreen
 import com.smwu.bigsister.ui.settings.SettingsScreen
 import com.smwu.bigsister.ui.stats.StatsScreen
-import com.smwu.bigsister.ui.viewModel.HomeViewModel
+import com.smwu.bigsister.ui.viewModel.RoutineViewModel
 
 /* ------------------------------------------------------------
    Bottom Navigation Items
@@ -45,7 +46,7 @@ sealed class BottomNavItem(
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
     object Home : BottomNavItem("home", "홈", Icons.Default.Home)
-    object Routine : BottomNavItem("routine_list", "루틴", Icons.Default.List)
+    object Routine : BottomNavItem("routine_list", "루틴", Icons.AutoMirrored.Filled.List)
     object Stats : BottomNavItem("stats", "통계", Icons.Default.DateRange)
     object Settings : BottomNavItem("settings", "설정", Icons.Default.Settings)
 }
@@ -54,7 +55,9 @@ sealed class BottomNavItem(
    App Navigation
 ------------------------------------------------------------ */
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    onLogOut: () -> Unit
+) {
     val navController = rememberNavController()
 
     val bottomNavItems = listOf(
@@ -109,7 +112,7 @@ fun AppNavigation() {
 
             NavHost(
                 navController = navController,
-                startDestination = "onboarding"
+                startDestination = "home"
             ) {
 
                 /* ------------------ Onboarding ------------------ */
@@ -123,13 +126,9 @@ fun AppNavigation() {
                     )
                 }
 
-                /* ------------------ Home (🔥 핵심 수정) ------------------ */
-                composable("home") { backStackEntry ->
-                    val homeViewModel: HomeViewModel =
-                        hiltViewModel(backStackEntry)
-
+                /* ------------------ Home ------------------ */
+                composable("home") {
                     HomeScreen(
-                        homeViewModel = homeViewModel,
                         onNavigateToReservationAdd = { date ->
                             navController.navigate("routine_reservation?date=$date")
                         },
@@ -138,6 +137,9 @@ fun AppNavigation() {
                         },
                         onNavigateToStats = {
                             navController.navigate("stats")
+                        },
+                        onSettingsClick = {
+                            navController.navigate("settings")
                         }
                     )
                 }
@@ -153,6 +155,9 @@ fun AppNavigation() {
                         },
                         onStartRoutineClick = { id ->
                             navController.navigate("live_mode/$id")
+                        },
+                        onSettingsClick = {
+                            navController.navigate("settings")
                         }
                     )
                 }
@@ -174,6 +179,30 @@ fun AppNavigation() {
                     RoutineAddScreen(
                         routineId = routineId,
                         onNavigateBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                /* ------------------ Station Search ------------------ */
+                composable(
+                    route = "station_search?type={type}",
+                    arguments = listOf(
+                        navArgument("type") {
+                            type = NavType.StringType
+                            defaultValue = "origin"
+                        }
+                    )
+                ) {
+                    val routineViewModel: RoutineViewModel = hiltViewModel()
+
+                    StationSearchScreen(
+                        viewModel = routineViewModel,
+                        onDismiss = {
+                            navController.popBackStack()
+                        },
+                        onStationSelected = { station ->
+                            // TODO: StationInfo → RoutineAddScreen 전달
                             navController.popBackStack()
                         }
                     )
@@ -224,7 +253,8 @@ fun AppNavigation() {
                     SettingsScreen(
                         onNavigateBack = {
                             navController.popBackStack()
-                        }
+                        },
+                        onNavigateToLogin = onLogOut
                     )
                 }
             }

@@ -17,11 +17,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
+import com.smwu.bigsister.data.repository.UserRepository
 
-/* ────────────────────────────────
-   UI STATE
-──────────────────────────────── */
-
+/**
+ * '루틴 실행 화면'을 위한 UI 상태
+ */
 data class LiveModeUiState(
     val routineTitle: String = "",
     val currentStepIndex: Int = 0,
@@ -34,14 +34,11 @@ data class LiveModeUiState(
     val isLoading: Boolean = true
 )
 
-/* ────────────────────────────────
-   VIEW MODEL
-──────────────────────────────── */
-
 @HiltViewModel
 class LiveModeViewModel @Inject constructor(
     private val routineRepository: RoutineRepository,
     private val completionRepository: CompletionRepository,
+    private val userRepository: UserRepository, // ✅ userId 획득용
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -55,17 +52,11 @@ class LiveModeViewModel @Inject constructor(
     private var routineStartTime: Long = 0L
     private var plannedTotalDuration: Long = 0L
 
-    /* ────────────────────────────────
-       INIT
-    ──────────────────────────────── */
-
     init {
         savedStateHandle.get<Int>("routineId")?.toLong()?.let {
             loadRoutine(it)
         } ?: run {
-            _uiState.update {
-                it.copy(isLoading = false, isFinished = true)
-            }
+            _uiState.update { it.copy(isLoading = false, isFinished = true) }
         }
     }
 
@@ -165,16 +156,12 @@ class LiveModeViewModel @Inject constructor(
         startStep(_uiState.value.currentStepIndex + 1)
     }
 
-    /**
-     * 🔹 UI에서 호출하는 "건너뛰기"
-     * 현재는 완료와 동일한 동작
-     */
     fun skipStep() {
         completeStep()
     }
 
     /* ────────────────────────────────
-       FINISH
+       FINISH (🔥 userId 반영 포인트)
     ──────────────────────────────── */
 
     private fun finishRoutine() {
@@ -185,12 +172,16 @@ class LiveModeViewModel @Inject constructor(
             val completionTime = System.currentTimeMillis()
             val totalTimeMillis = completionTime - routineStartTime
 
+            val currentUserId =
+                userRepository.firebaseUser.value?.uid ?: ""
+
             completionRepository.insertCompletion(
                 CompletionEntity(
                     routineId = routineId,
+                    userId = currentUserId,
                     date = LocalDate.now().toString(),
                     completedAt = completionTime,
-                    totalTime = (totalTimeMillis / 1000).toInt(),
+                    totalTime = totalTimeMillis / 1000, // Long
                     wasLate = totalTimeMillis > plannedTotalDuration
                 )
             )

@@ -4,37 +4,39 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    id("com.google.gms.google-services") // Firebase
+
+    // 🔥 Firebase 플러그인
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.smwu.bigsister"
-    compileSdk = 36
+    compileSdk = 36 // ✅ 에러 해결을 위해 36으로 변경
 
     defaultConfig {
         applicationId = "com.smwu.bigsister"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 36 // ✅ 에러 해결을 위해 36으로 변경
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 🔹 ODsay API Key (BuildConfig)
+        // 🔹 ODsay API Key
         buildConfigField(
             "String",
             "ODSAY_API_KEY",
             "\"${project.findProperty("ODSAY_API_KEY") ?: ""}\""
         )
 
-        // 🔹 Google Directions API Key (BuildConfig)
+        // 🔹 Google Directions API Key
         buildConfigField(
             "String",
             "GOOGLE_MAPS_API_KEY",
             "\"${project.findProperty("GOOGLE_MAPS_API_KEY") ?: ""}\""
         )
 
-        // 🔹 Google Maps SDK (Manifest placeholder)
+        // 🔹 Google Maps SDK
         manifestPlaceholders["MAPS_API_KEY"] =
             project.findProperty("GOOGLE_MAPS_API_KEY") ?: ""
     }
@@ -52,8 +54,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-
-        // JDK desugaring (LocalDate 등)
         isCoreLibraryDesugaringEnabled = true
     }
 
@@ -63,19 +63,18 @@ android {
 
     buildFeatures {
         compose = true
-        buildConfig = true   // 🔥 반드시 필요 (BuildConfig 생성)
+        buildConfig = true
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion =
-            libs.versions.kotlinCompilerExtension.get()
+        kotlinCompilerExtensionVersion = libs.versions.kotlinCompilerExtension.get()
     }
 }
 
 dependencies {
 
     // ===============================
-    // AndroidX Core
+    // AndroidX Core & Lifecycle
     // ===============================
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -98,21 +97,21 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     // ===============================
-    // Room
+    // Room (Local DB)
     // ===============================
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
     // ===============================
-    // Hilt
+    // Hilt (Dependency Injection)
     // ===============================
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
     // ===============================
-    // DataStore
+    // DataStore (Settings)
     // ===============================
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.datastore:datastore-core:1.1.1")
@@ -120,12 +119,13 @@ dependencies {
     // ===============================
     // Firebase
     // ===============================
-    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-messaging")
 
-    // Firebase Task.await()
+    // Task.await() 지원
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     // ===============================
@@ -138,7 +138,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // ===============================
-    // Network (ODsay)
+    // Network (Retrofit, ODsay)
     // ===============================
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
@@ -146,17 +146,17 @@ dependencies {
     implementation(libs.okhttp.logging)
 
     // ===============================
-    // UI / Utils
+    // UI / Utils (Coil)
     // ===============================
     implementation("io.coil-kt:coil-compose:2.7.0")
 
     // ===============================
-    // Charts (Stats)
+    // Charts (MPAndroidChart)
     // ===============================
     implementation(libs.mpandroidchart)
 
     // ===============================
-    // WorkManager (알림)
+    // WorkManager (Background Tasks)
     // ===============================
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 

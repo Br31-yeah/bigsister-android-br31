@@ -15,7 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
-import com.smwu.bigsister.ui.AppNavigation
+import com.smwu.bigsister.ui.RootNavigation // ✅ 여기 변경됨 (AppNavigation -> RootNavigation)
 import com.smwu.bigsister.ui.theme.BigSisterTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -35,7 +35,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigation()   // ✅ 홈부터 시작
+                    // ❌ 기존: AppNavigation()
+                    // ✅ 수정: RootNavigation()을 호출해야 로그인 화면부터 시작합니다.
+                    RootNavigation()
                 }
             }
         }

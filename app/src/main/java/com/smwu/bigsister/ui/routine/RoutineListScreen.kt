@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.rounded.AccessTime
@@ -28,10 +29,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,31 +54,49 @@ import com.smwu.bigsister.ui.theme.PurplePrimary
 import com.smwu.bigsister.ui.theme.TextGray
 import com.smwu.bigsister.ui.viewModel.RoutineViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutineListScreen(
     viewModel: RoutineViewModel = hiltViewModel(),
     onAddRoutineClick: () -> Unit,
     onRoutineClick: (Long) -> Unit,
-    onStartRoutineClick: (Long) -> Unit
+    onStartRoutineClick: (Long) -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     val routineList by viewModel.routineListWithSteps.collectAsState(initial = emptyList())
 
-    Scaffold(containerColor = Color.White) { paddingValues ->
+    Scaffold(
+        containerColor = Color.White,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "내 루틴",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "설정",
+                            tint = Color.Black
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            )
+        }
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp)
+            contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp)
         ) {
-            item {
-                Text(
-                    text = "내 루틴",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
 
             if (routineList.isEmpty()) {
                 item {
@@ -93,8 +115,12 @@ fun RoutineListScreen(
                 RoutineCard(
                     data = routine,
                     onEditClick = { onRoutineClick(routine.routine.id) },
-                    onDeleteClick = { viewModel.deleteRoutine(routine.routine) },
-                    onStartClick = { onStartRoutineClick(routine.routine.id) }
+                    onDeleteClick = {
+                        viewModel.deleteRoutine(routine.routine.id)
+                    },
+                    onStartClick = {
+                        onStartRoutineClick(routine.routine.id)
+                    }
                 )
             }
 
@@ -160,13 +186,13 @@ fun RoutineCard(
 
                 Column(Modifier.weight(1f)) {
                     Text(
-                        data.routine.title,
+                        text = data.routine.title,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "🕒 $timeText • ${data.steps.size}단계",
+                        text = "🕒 $timeText • ${data.steps.size}단계",
                         fontSize = 14.sp,
                         color = TextGray
                     )
@@ -190,7 +216,7 @@ fun RoutineCard(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Rounded.DirectionsCar,
+                            imageVector = Icons.Rounded.DirectionsCar,
                             contentDescription = null,
                             tint = TextGray
                         )

@@ -8,21 +8,15 @@ data class RoutineEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
 
-    // 루틴 이름 (예: "아침 준비 루틴")
-    val title: String,
+    // ✅ [추가] 데이터 주인 식별용 (로그인된 유저 UID)
+    val userId: String = "",
 
-    // 엑셀 스펙: 루틴 생성 시각 (timestamp)
+    val title: String,
     val createdAt: Long = System.currentTimeMillis(),
 
-    // 루틴 설명 (선택)
-    val description: String? = null,
+    // ✅ [수정] Int -> Long (초 단위 계산 대비)
+    // 이름도 Minutes를 떼고 범용적인 'totalDuration'으로 변경 추천
+    val totalDuration: Long = 0L,
 
-    // 카테고리/색상 코드 (통계/UI용)
-    val categoryColor: String? = null,
-
-    // 예상 전체 소요 시간(분) – steps 합산 결과를 캐싱
-    val totalDurationMinutes: Int = 0,
-
-    // 활성화 여부 (루틴 탭에서 on/off)
     val isActive: Boolean = true
 )

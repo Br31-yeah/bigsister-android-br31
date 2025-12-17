@@ -1,46 +1,22 @@
 package com.smwu.bigsister.ui.routine
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.smwu.bigsister.ui.components.FigmaInput
-import com.smwu.bigsister.ui.components.RoutineSummaryCard
-import com.smwu.bigsister.ui.components.SecondaryButton
-import com.smwu.bigsister.ui.components.StepCard
+import com.smwu.bigsister.ui.components.*
 import com.smwu.bigsister.ui.map.StationSearchScreen
 import com.smwu.bigsister.ui.theme.MintConfirm
+import com.smwu.bigsister.ui.viewModel.LoginViewModel
 import com.smwu.bigsister.ui.viewModel.RoutineViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,7 +24,8 @@ import com.smwu.bigsister.ui.viewModel.RoutineViewModel
 fun RoutineAddScreen(
     routineId: Long?,
     onNavigateBack: () -> Unit,
-    viewModel: RoutineViewModel = hiltViewModel()
+    viewModel: RoutineViewModel = hiltViewModel(),
+    loginViewModel: LoginViewModel = hiltViewModel()
 ) {
     /* ---------------- 초기 로딩 ---------------- */
     LaunchedEffect(routineId) {
@@ -56,10 +33,11 @@ fun RoutineAddScreen(
     }
 
     val state by viewModel.editState.collectAsState()
+    val currentUser by loginViewModel.currentUser.collectAsState()
 
     /* ---------------- 장소 검색 상태 ---------------- */
     var activeSearchStepId by remember { mutableStateOf<Long?>(null) }
-    var activeSearchType by remember { mutableStateOf<String?>(null) }
+    var activeSearchType by remember { mutableStateOf<String?>(null) } // "FROM" / "TO"
 
     Scaffold(
         topBar = {
@@ -121,7 +99,7 @@ fun RoutineAddScreen(
                             onDelete = { viewModel.removeStep(step) },
                             onSearch = { type ->
                                 activeSearchStepId = step.id
-                                activeSearchType = type // "FROM" / "TO"
+                                activeSearchType = type
                             }
                         )
                     }
@@ -152,7 +130,12 @@ fun RoutineAddScreen(
 
             /* ---------- 저장 버튼 ---------- */
             Button(
-                onClick = { viewModel.saveRoutine(onNavigateBack) },
+                onClick = {
+                    val uid = currentUser?.uid ?: ""
+                    viewModel.saveRoutine(uid) {
+                        onNavigateBack()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -177,7 +160,7 @@ fun RoutineAddScreen(
                 }
             ) {
                 StationSearchScreen(
-                    viewModel = viewModel,   // ⭐ FIX: 반드시 전달
+                    viewModel = viewModel,
                     onDismiss = {
                         activeSearchStepId = null
                         activeSearchType = null
