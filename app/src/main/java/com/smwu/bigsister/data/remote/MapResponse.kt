@@ -2,6 +2,7 @@ package com.smwu.bigsister.data.remote
 
 import com.google.gson.annotations.SerializedName
 
+
 /**
  * 네이버 지도 Directions 5 API의 응답(Response) 데이터 모델
  */

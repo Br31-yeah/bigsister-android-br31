@@ -1,20 +1,29 @@
 package com.smwu.bigsister.data.repository
 
 import android.util.Log
+import com.smwu.bigsister.BuildConfig
+import com.smwu.bigsister.data.network.GoogleDirectionsService
 import com.smwu.bigsister.data.network.ODsayResponse
 import com.smwu.bigsister.data.network.ODsayService
 import com.smwu.bigsister.data.network.StationInfo
 import javax.inject.Inject
 
 class MapRepository @Inject constructor(
-    private val odsayService: ODsayService
+    private val odsayService: ODsayService,
+    private val googleService: GoogleDirectionsService
 ) {
-    // ⚠️ 실제 배포 전에는 반드시 local.properties / BuildConfig로 이동
-    private val apiKey = "Zh6lUheHIgm8yCwMWb2+R3f221p2+hbaS3CP6CftEJU"
 
-    /**
-     * ODsay 경로 전체 응답
-     */
+    /* ────────────────────────────────
+       API Keys (BuildConfig)
+    ──────────────────────────────── */
+
+    private val odsayApiKey: String = BuildConfig.ODSAY_API_KEY
+    private val googleApiKey: String = BuildConfig.GOOGLE_MAPS_API_KEY
+
+    /* ────────────────────────────────
+       ODsay : 경로 전체 응답
+    ──────────────────────────────── */
+
     suspend fun searchPath(
         startX: Double,
         startY: Double,
@@ -22,7 +31,7 @@ class MapRepository @Inject constructor(
         endY: Double
     ): ODsayResponse {
         return odsayService.getTransitPath(
-            apiKey = apiKey,
+            apiKey = odsayApiKey,
             startX = startX,
             startY = startY,
             endX = endX,
@@ -30,31 +39,26 @@ class MapRepository @Inject constructor(
         )
     }
 
-    /**
-     * "127.xxx,37.xxx" 형태의 좌표 문자열을 받아
-     * 👉 예상 소요시간 (분) 을 Long 으로 반환
-     */
+    /* ────────────────────────────────
+       ODsay : 대중교통 소요시간 (분)
+    ──────────────────────────────── */
+
     suspend fun getExpectedDuration(
         fromString: String,
         toString: String
     ): Long {
         return try {
-            val startParts = fromString.split(",")
-            val endParts = toString.split(",")
+            val start = fromString.split(",")
+            val end = toString.split(",")
 
-            if (startParts.size < 2 || endParts.size < 2) return 0L
-
-            val startX = startParts[0].trim().toDouble()
-            val startY = startParts[1].trim().toDouble()
-            val endX = endParts[0].trim().toDouble()
-            val endY = endParts[1].trim().toDouble()
+            if (start.size < 2 || end.size < 2) return 0L
 
             val response = odsayService.getTransitPath(
-                apiKey = apiKey,
-                startX = startX,
-                startY = startY,
-                endX = endX,
-                endY = endY
+                apiKey = odsayApiKey,
+                startX = start[0].trim().toDouble(),
+                startY = start[1].trim().toDouble(),
+                endX = end[0].trim().toDouble(),
+                endY = end[1].trim().toDouble()
             )
 
             response.result
@@ -66,23 +70,58 @@ class MapRepository @Inject constructor(
                 ?: 0L
 
         } catch (e: Exception) {
-            Log.e("MapRepository", "ODsay 시간 계산 실패", e)
+            Log.e("MapRepository", "ODsay 이동 시간 계산 실패", e)
             0L
         }
     }
 
-    /**
-     * 역 이름 검색
-     */
+    /* ────────────────────────────────
+       Google Directions : 도보 / 자동차
+       (lat,lng 문자열 기준, 분 단위)
+    ──────────────────────────────── */
+
+    suspend fun getWalkingOrDrivingDuration(
+        fromLatLng: String, // "lat,lng"
+        toLatLng: String,
+        mode: String        // "walking" | "driving"
+    ): Long {
+        return try {
+            val response = googleService.getDirections(
+                origin = fromLatLng,
+                destination = toLatLng,
+                mode = mode,
+                apiKey = googleApiKey
+            )
+
+            response.routes
+                .firstOrNull()
+                ?.legs
+                ?.firstOrNull()
+                ?.duration
+                ?.value
+                ?.div(60)   // seconds → minutes
+                ?.toLong()
+                ?: 0L
+
+        } catch (e: Exception) {
+            Log.e("MapRepository", "Google 이동 시간 계산 실패", e)
+            0L
+        }
+    }
+
+    /* ────────────────────────────────
+       ODsay : 지하철역 검색
+    ──────────────────────────────── */
+
     suspend fun searchStationByName(name: String): List<StationInfo> {
         return try {
             val response = odsayService.searchStation(
-                apiKey = apiKey,
+                apiKey = odsayApiKey,
                 stationName = name
             )
             response.result?.station ?: emptyList()
         } catch (e: Exception) {
-            Log.e("MapRepository", "역 검색 실패", e)
+            Log.e("MapRepository", "ODsay 역 검색 실패", e)
             emptyList()
         }
     }

@@ -39,4 +39,24 @@ object RetrofitClient {
         .client(okHttpClient) // 인증 헤더를 포함한 클라이언트 사용
         .addConverterFactory(GsonConverterFactory.create()) // JSON 변환기
         .build()
+
+    // ===============================
+    // ODsay API
+    // ===============================
+    private const val ODSAY_BASE_URL = "https://api.odsay.com/v1/api/"
+
+    val odsayRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(ODSAY_BASE_URL)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    // ===============================
+    // Google Directions API
+    // ===============================
+    private const val GOOGLE_BASE_URL = "https://maps.googleapis.com/"
+
+    val googleRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(GOOGLE_BASE_URL)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
 }

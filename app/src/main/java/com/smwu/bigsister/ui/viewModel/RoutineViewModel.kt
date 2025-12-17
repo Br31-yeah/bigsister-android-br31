@@ -24,7 +24,7 @@ class RoutineViewModel @Inject constructor(
 ) : ViewModel() {
 
     /* ────────────────────────────────
-       루틴 목록 (RoutineListScreen)
+       루틴 목록
     ──────────────────────────────── */
 
     private val _routineListWithSteps =
@@ -40,13 +40,12 @@ class RoutineViewModel @Inject constructor(
     }
 
     /* ────────────────────────────────
-       루틴 편집 상태 (RoutineAddScreen)
+       루틴 편집 상태
     ──────────────────────────────── */
 
     private val _editState = MutableStateFlow(RoutineEditState())
     val editState = _editState.asStateFlow()
 
-    /** UI 전용 임시 Step ID (DB autoGenerate와 충돌 방지용) */
     private var tempStepId = -1L
 
     fun loadRoutineForEdit(routineId: Long?) {
@@ -76,27 +75,15 @@ class RoutineViewModel @Inject constructor(
         _editState.update { it.copy(title = title) }
     }
 
-    fun deleteRoutine(routine: RoutineEntity) {
-        viewModelScope.launch {
-            routineRepository.deleteRoutine(routine)
-        }
-    }
-
     fun updateStep(step: StepEntity) {
         _editState.update {
-            it.copy(
-                steps = it.steps.map { s ->
-                    if (s.id == step.id) step else s
-                }
-            )
+            it.copy(steps = it.steps.map { s -> if (s.id == step.id) step else s })
         }
     }
 
     fun removeStep(step: StepEntity) {
         _editState.update {
-            it.copy(
-                steps = it.steps.filterNot { s -> s.id == step.id }
-            )
+            it.copy(steps = it.steps.filterNot { s -> s.id == step.id })
         }
     }
 
@@ -104,7 +91,7 @@ class RoutineViewModel @Inject constructor(
         _editState.update {
             it.copy(
                 steps = it.steps + StepEntity(
-                    id = tempStepId--,                     // ⭐ UI 임시 ID
+                    id = tempStepId--,
                     routineId = it.routineId ?: 0L,
                     name = "",
                     duration = 0L,
@@ -114,11 +101,17 @@ class RoutineViewModel @Inject constructor(
         }
     }
 
+    fun deleteRoutine(routine: RoutineEntity) {
+        viewModelScope.launch {
+            routineRepository.deleteRoutine(routine)
+        }
+    }
+
     fun addMovementStep() {
         _editState.update {
             it.copy(
                 steps = it.steps + StepEntity(
-                    id = tempStepId--,                     // ⭐ UI 임시 ID
+                    id = tempStepId--,
                     routineId = it.routineId ?: 0L,
                     name = "이동",
                     duration = 0L,
@@ -137,17 +130,12 @@ class RoutineViewModel @Inject constructor(
         viewModelScope.launch {
             val state = _editState.value
 
-            // DB insert용 Step 목록 (id 초기화)
-            val stepsForSave = state.steps.map {
-                it.copy(id = 0L)
-            }
-
             routineRepository.saveRoutineWithSteps(
                 RoutineEntity(
                     id = state.routineId ?: 0L,
                     title = state.title
                 ),
-                stepsForSave
+                state.steps.map { it.copy(id = 0L) }
             )
 
             onFinished()
@@ -155,18 +143,41 @@ class RoutineViewModel @Inject constructor(
     }
 
     /* ────────────────────────────────
-       이동 시간 계산 (ODsay 연동)
+       🚍 이동 시간 자동 계산 (핵심)
     ──────────────────────────────── */
 
     fun calculateDuration(step: StepEntity) {
+        if (!step.isTransport) return
+
+        val from = step.from ?: return
+        val to = step.to ?: return
+        val mode = step.transportMode ?: return
+
+        val fromCoord = from.substringAfter("|").split(",")
+        val toCoord = to.substringAfter("|").split(",")
+
+        val fromLatLng = "${fromCoord[1]},${fromCoord[0]}" // lat,lng
+        val toLatLng = "${toCoord[1]},${toCoord[0]}"
+
         viewModelScope.launch {
-            if (!step.isTransport) return@launch
+            val duration = when (mode) {
+                "transit" -> {
+                    mapRepository.getExpectedDuration(
+                        fromString = from.substringAfter("|"),
+                        toString = to.substringAfter("|")
+                    )
+                }
 
-            val from = step.from ?: return@launch
-            val to = step.to ?: return@launch
+                "walking", "driving" -> {
+                    mapRepository.getWalkingOrDrivingDuration(
+                        fromLatLng = fromLatLng,
+                        toLatLng = toLatLng,
+                        mode = mode
+                    )
+                }
 
-            val duration: Long =
-                mapRepository.getExpectedDuration(from, to).toLong()
+                else -> 0L
+            }
 
             updateStep(
                 step.copy(
@@ -178,7 +189,7 @@ class RoutineViewModel @Inject constructor(
     }
 
     /* ────────────────────────────────
-       역 검색 (UI용)
+       역 검색
     ──────────────────────────────── */
 
     private val _searchResults =

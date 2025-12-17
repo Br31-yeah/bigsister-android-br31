@@ -2,14 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 알림 권한 (Android 13+) -->
+    <!-- ───────── 권한 ───────── -->
+
+    <!-- 네트워크 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 알림 (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- 정확한 알람 권한 (Android 12+) -->
+    <!-- 정확한 알람 (Android 12+) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
-    <!-- 네트워크 사용 -->
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- ───────── Application ───────── -->
 
     <application
         android:name=".App"
@@ -23,12 +27,14 @@
         android:theme="@style/Theme.BigSister"
         tools:targetApi="31">
 
-        <!-- Google Maps API KEY -->
+        <!-- ✅ Google Maps SDK API Key
+             - build.gradle.kts의 manifestPlaceholders["MAPS_API_KEY"]에서 주입됨 -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
 
-        <!-- Main Activity -->
+        <!-- ───────── Main Activity ───────── -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -39,12 +45,12 @@
             </intent-filter>
         </activity>
 
-        <!-- 🔥 Alarm Receiver (반드시 있어야 함) -->
+        <!-- ───────── Alarm Receiver ───────── -->
         <receiver
             android:name=".utils.AlarmReceiver"
             android:exported="false" />
 
-        <!-- Firebase Messaging -->
+        <!-- ───────── Firebase Messaging ───────── -->
         <service
             android:name=".utils.MyFirebaseMessagingService"
             android:exported="false">
@@ -54,4 +60,5 @@
         </service>
 
     </application>
+
 </manifest>

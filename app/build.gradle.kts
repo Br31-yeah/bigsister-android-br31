@@ -20,12 +20,23 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // ✅ ODsay API Key (local.properties)
+        // 🔹 ODsay API Key (BuildConfig)
         buildConfigField(
             "String",
             "ODSAY_API_KEY",
-            "\"${project.properties["ODSAY_API_KEY"]}\""
+            "\"${project.findProperty("ODSAY_API_KEY") ?: ""}\""
         )
+
+        // 🔹 Google Directions API Key (BuildConfig)
+        buildConfigField(
+            "String",
+            "GOOGLE_MAPS_API_KEY",
+            "\"${project.findProperty("GOOGLE_MAPS_API_KEY") ?: ""}\""
+        )
+
+        // 🔹 Google Maps SDK (Manifest placeholder)
+        manifestPlaceholders["MAPS_API_KEY"] =
+            project.findProperty("GOOGLE_MAPS_API_KEY") ?: ""
     }
 
     buildTypes {

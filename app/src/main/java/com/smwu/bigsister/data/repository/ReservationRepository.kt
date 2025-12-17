@@ -1,5 +1,6 @@
 package com.smwu.bigsister.data.repository
 
+import android.util.Log
 import com.smwu.bigsister.data.local.ReservationEntity
 import com.smwu.bigsister.data.local.dao.ReservationDao
 import com.smwu.bigsister.data.local.dao.RoutineDao
@@ -59,8 +60,10 @@ class ReservationRepository @Inject constructor(
 
     fun getReservationsBetweenDates(start: String, end: String): Flow<List<ReservationEntity>> =
         reservationDao.getReservationsBetweenDates(start, end)
+
     suspend fun addReservation(reservation: ReservationEntity) {
         reservationDao.insertReservation(reservation)
+        Log.d("RESERVATION", "Saved date = ${reservation.date}")
     }
 
     suspend fun deleteReservation(reservationId: Long) {
