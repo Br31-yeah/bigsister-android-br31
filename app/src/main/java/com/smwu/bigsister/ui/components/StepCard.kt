@@ -1,18 +1,26 @@
 package com.smwu.bigsister.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.rounded.DirectionsBus
 import androidx.compose.material.icons.rounded.DirectionsCar
-import androidx.compose.material.icons.rounded.DirectionsWalk
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,145 +37,75 @@ fun StepCard(
     step: StepEntity,
     viewModel: RoutineViewModel,
     onDelete: () -> Unit,
-    onSearch: (String) -> Unit
+    onSearch: (String) -> Unit,
+    onCurrentLocation: (String) -> Unit,
+    onSelectTransitRoute: ((String) -> Unit)? = null
 ) {
+    val canSearchRoute = step.from != null && step.to != null
+
     FigmaCard {
-
-        /* ───────────── 상단: 이름 + 시간 + 삭제 ───────────── */
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             FigmaInput(
                 value = step.name,
                 onValueChange = { viewModel.updateStep(step.copy(name = it)) },
                 placeholder = "단계 이름",
                 modifier = Modifier.weight(1f)
             )
-
-            Spacer(Modifier.width(12.dp))
-
-            // ⏱ 일반 Step만 시간 직접 입력 가능
             if (!step.isTransport) {
                 FigmaInput(
                     value = step.baseDuration.toString(),
-                    onValueChange = {
-                        viewModel.updateStep(
-                            step.copy(baseDuration = it.toLongOrNull() ?: 0L)
-                        )
-                    },
+                    onValueChange = { viewModel.updateStep(step.copy(baseDuration = it.toLongOrNull() ?: 0L)) },
                     placeholder = "분",
-                    modifier = Modifier.width(80.dp),
-                    singleLine = true
+                    modifier = Modifier.width(80.dp)
                 )
             }
-
-            Spacer(Modifier.width(4.dp))
-
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Outlined.Delete, contentDescription = "삭제")
-            }
+            IconButton(onClick = onDelete) { Icon(Icons.Outlined.Delete, null) }
         }
-
-        /* ───────────── 이동 단계 전용 UI ───────────── */
 
         if (step.isTransport) {
             Spacer(Modifier.height(16.dp))
-
-            // 출발 / 도착
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SecondaryButton(
-                    text = step.from?.substringBefore("|") ?: "출발지",
-                    onClick = { onSearch("FROM") },
-                    modifier = Modifier.weight(1f)
-                )
-                SecondaryButton(
-                    text = step.to?.substringBefore("|") ?: "도착지",
-                    onClick = { onSearch("TO") },
-                    modifier = Modifier.weight(1f)
-                )
+                Column(Modifier.weight(1f)) {
+                    SecondaryButton(text = step.from?.substringBefore("|") ?: "출발지", onClick = { onSearch("FROM") }, modifier = Modifier.fillMaxWidth())
+                    TextButton(onClick = { onCurrentLocation("FROM") }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("📍 현위치", fontSize = 11.sp) }
+                }
+                Column(Modifier.weight(1f)) {
+                    SecondaryButton(text = step.to?.substringBefore("|") ?: "도착지", onClick = { onSearch("TO") }, modifier = Modifier.fillMaxWidth())
+                    TextButton(onClick = { onCurrentLocation("TO") }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("📍 현위치", fontSize = 11.sp) }
+                }
             }
 
             Spacer(Modifier.height(12.dp))
-
-            // 이동 수단
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TransportButton(
-                    icon = Icons.Rounded.DirectionsCar,
-                    label = "자동차",
-                    selected = step.transportMode == "driving"
-                ) {
+                TransportButton(Icons.Rounded.DirectionsCar, "자동차", step.transportMode == "driving") {
                     viewModel.updateStep(step.copy(transportMode = "driving"))
-                    viewModel.calculateDuration(step)
+                    if (canSearchRoute) onSelectTransitRoute?.invoke("DRIVE")
                 }
-
-                TransportButton(
-                    icon = Icons.Rounded.DirectionsBus,
-                    label = "대중교통",
-                    selected = step.transportMode == "transit"
-                ) {
+                TransportButton(Icons.Rounded.DirectionsBus, "대중교통", step.transportMode == "transit") {
                     viewModel.updateStep(step.copy(transportMode = "transit"))
-                    viewModel.calculateDuration(step)
+                    if (canSearchRoute) onSelectTransitRoute?.invoke("TRANSIT")
                 }
-
-                TransportButton(
-                    icon = Icons.Rounded.DirectionsWalk,
-                    label = "도보",
-                    selected = step.transportMode == "walking"
-                ) {
+                TransportButton(Icons.AutoMirrored.Rounded.DirectionsWalk, "도보", step.transportMode == "walking") {
                     viewModel.updateStep(step.copy(transportMode = "walking"))
-                    viewModel.calculateDuration(step)
+                    if (canSearchRoute) onSelectTransitRoute?.invoke("WALK")
                 }
             }
-
             Spacer(Modifier.height(12.dp))
-
-            // ⏱ 기준 vs 변경 시간 표시
-            val base = step.baseDuration
-            val current = step.calculatedDuration ?: base
-            val diff = current - base
-
-            Text(
-                text =
-                    if (base == 0L) {
-                        "시간 계산 필요"
-                    } else if (diff == 0L) {
-                        "예상 소요시간 약 ${base}분"
-                    } else {
-                        "예상 ${current}분 (기준 ${base}분, ${if (diff > 0) "+" else ""}${diff}분)"
-                    },
-                fontSize = 14.sp,
-                color = if (diff != 0L) Color.Red else MutedForeground
-            )
+            Text(text = "예상 소요시간 약 ${step.baseDuration}분", fontSize = 13.sp, color = MutedForeground)
         }
-
-        /* ───────────── 메모 ───────────── */
-
-        Spacer(Modifier.height(16.dp))
-
-        FigmaInput(
-            value = step.memo ?: "",
-            onValueChange = { viewModel.updateStep(step.copy(memo = it)) },
-            placeholder = "메모 (선택)",
-            singleLine = false,
-            minLines = 2
-        )
+        FigmaInput(value = step.memo ?: "", onValueChange = { viewModel.updateStep(step.copy(memo = it)) }, placeholder = "메모 (선택)", minLines = 2)
     }
 }
 
-/* ───────────── 이동 수단 버튼 ───────────── */
-
 @Composable
-private fun TransportButton(
-    icon: ImageVector,
-    label: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    SecondaryButton(
-        text = label,
-        onClick = onClick,
-        modifier = modifier
-    )
+private fun TransportButton(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
+    Button(
+        onClick = onClick, modifier = Modifier.height(38.dp), shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = if (selected) Color(0xFF8B8FD9) else Color(0xFFF1F3FD), contentColor = if (selected) Color.White else Color(0xFF8B8FD9)),
+        contentPadding = PaddingValues(horizontal = 12.dp)
+    ) {
+        Icon(icon, null, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(4.dp))
+        Text(label, fontSize = 12.sp)
+    }
 }

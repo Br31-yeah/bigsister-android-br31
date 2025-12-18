@@ -7,17 +7,11 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -29,17 +23,13 @@ import androidx.navigation.navArgument
 import com.smwu.bigsister.ui.home.HomeScreen
 import com.smwu.bigsister.ui.intro.OnboardingFlow
 import com.smwu.bigsister.ui.live.LiveModeScreen
-import com.smwu.bigsister.ui.map.StationSearchScreen
 import com.smwu.bigsister.ui.reservation.ReservationAddScreen
 import com.smwu.bigsister.ui.routine.RoutineAddScreen
 import com.smwu.bigsister.ui.routine.RoutineListScreen
 import com.smwu.bigsister.ui.settings.SettingsScreen
 import com.smwu.bigsister.ui.stats.StatsScreen
-import com.smwu.bigsister.ui.viewModel.RoutineViewModel
+import com.smwu.bigsister.ui.transit.TransitRouteScreen
 
-/* ------------------------------------------------------------
-   Bottom Navigation Items
------------------------------------------------------------- */
 sealed class BottomNavItem(
     val route: String,
     val label: String,
@@ -51,212 +41,93 @@ sealed class BottomNavItem(
     object Settings : BottomNavItem("settings", "설정", Icons.Default.Settings)
 }
 
-/* ------------------------------------------------------------
-   App Navigation
------------------------------------------------------------- */
 @Composable
-fun AppNavigation(
-    onLogOut: () -> Unit
-) {
+fun AppNavigation(onLogOut: () -> Unit) {
     val navController = rememberNavController()
-
-    val bottomNavItems = listOf(
-        BottomNavItem.Home,
-        BottomNavItem.Routine,
-        BottomNavItem.Stats,
-        BottomNavItem.Settings
-    )
-
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val currentRoute = navBackStackEntry?.destination?.route ?: ""
 
-    val showBottomBar = bottomNavItems.any { item ->
-        currentRoute?.startsWith(item.route) == true
-    }
+    val bottomNavItems = listOf(BottomNavItem.Home, BottomNavItem.Routine, BottomNavItem.Stats, BottomNavItem.Settings)
 
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
+            if (currentRoute != "onboarding" && !currentRoute.startsWith("live_mode")) {
                 NavigationBar(containerColor = Color.White) {
                     bottomNavItems.forEach { item ->
-                        val selected =
-                            navBackStackEntry?.destination?.hierarchy
-                                ?.any { it.route == item.route } == true
-
                         NavigationBarItem(
-                            selected = selected,
+                            selected = navBackStackEntry?.destination?.hierarchy?.any { it.route == item.route } == true,
                             onClick = {
                                 navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
                             },
                             icon = { Icon(item.icon, contentDescription = item.label) },
-                            label = { Text(item.label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xFF8B8FD9),
-                                selectedTextColor = Color(0xFF8B8FD9),
-                                indicatorColor = Color(0xFFE3E4FA)
-                            )
+                            label = { Text(item.label) }
                         )
                     }
                 }
             }
         }
     ) { innerPadding ->
-
-        Box(modifier = Modifier.padding(innerPadding)) {
-
-            NavHost(
-                navController = navController,
-                startDestination = "home"
-            ) {
-
-                /* ------------------ Onboarding ------------------ */
-                composable("onboarding") {
-                    OnboardingFlow(
-                        onComplete = {
-                            navController.navigate("home") {
-                                popUpTo("onboarding") { inclusive = true }
-                            }
-                        }
-                    )
-                }
-
-                /* ------------------ Home ------------------ */
+        Box(Modifier.padding(innerPadding)) {
+            NavHost(navController = navController, startDestination = "home") {
                 composable("home") {
                     HomeScreen(
-                        onNavigateToReservationAdd = { date ->
-                            navController.navigate("routine_reservation?date=$date")
-                        },
-                        onNavigateToRoutineList = {
-                            navController.navigate("routine_list")
-                        },
-                        onNavigateToStats = {
-                            navController.navigate("stats")
-                        },
-                        onSettingsClick = {
-                            navController.navigate("settings")
-                        }
+                        onNavigateToReservationAdd = { date -> navController.navigate("routine_reservation?date=$date") },
+                        onNavigateToRoutineList = { navController.navigate("routine_list") },
+                        onNavigateToStats = { navController.navigate("stats") },
+                        onSettingsClick = { navController.navigate("settings") },
+                        onNavigateToLiveMode = { id -> navController.navigate("live_mode/$id") }
                     )
                 }
 
-                /* ------------------ Routine List ------------------ */
-                composable("routine_list") {
-                    RoutineListScreen(
-                        onAddRoutineClick = {
-                            navController.navigate("routine_builder")
-                        },
-                        onRoutineClick = { id ->
-                            navController.navigate("routine_builder?id=$id")
-                        },
-                        onStartRoutineClick = { id ->
-                            navController.navigate("live_mode/$id")
-                        },
-                        onSettingsClick = {
-                            navController.navigate("settings")
-                        }
-                    )
-                }
-
-                /* ------------------ Routine Add / Edit ------------------ */
-                composable(
-                    route = "routine_builder?id={routineId}",
-                    arguments = listOf(
-                        navArgument("routineId") {
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
-                        }
-                    )
-                ) { entry ->
-                    val routineId =
-                        entry.arguments?.getString("routineId")?.toLongOrNull()
-
+                composable("routine_builder?id={routineId}", arguments = listOf(navArgument("routineId") { type = NavType.StringType; nullable = true })) { entry ->
                     RoutineAddScreen(
-                        routineId = routineId,
-                        onNavigateBack = {
-                            navController.popBackStack()
-                        }
-                    )
-                }
-
-                /* ------------------ Station Search ------------------ */
-                composable(
-                    route = "station_search?type={type}",
-                    arguments = listOf(
-                        navArgument("type") {
-                            type = NavType.StringType
-                            defaultValue = "origin"
-                        }
-                    )
-                ) {
-                    val routineViewModel: RoutineViewModel = hiltViewModel()
-
-                    StationSearchScreen(
-                        viewModel = routineViewModel,
-                        onDismiss = {
-                            navController.popBackStack()
+                        routineId = entry.arguments?.getString("routineId")?.toLongOrNull(),
+                        onNavigateBack = { navController.popBackStack() },
+                        // ✅ 매개변수 개수 일치 (6개)
+                        onNavigateToTransit = { fN, fL, tN, tL, time, mode ->
+                            navController.navigate("transit_route?fromName=$fN&fromLatLng=$fL&toName=$tN&toLatLng=$tL&departureTime=$time&mode=$mode")
                         },
-                        onStationSelected = { station ->
-                            // TODO: StationInfo → RoutineAddScreen 전달
-                            navController.popBackStack()
-                        }
+                        navController = navController
                     )
                 }
 
-                /* ------------------ Reservation Add ------------------ */
                 composable(
-                    route = "routine_reservation?date={date}",
+                    route = "transit_route?fromName={fromName}&fromLatLng={fromLatLng}&toName={toName}&toLatLng={toLatLng}&departureTime={departureTime}&mode={mode}",
                     arguments = listOf(
-                        navArgument("date") {
-                            type = NavType.StringType
-                            nullable = true
-                        }
+                        navArgument("fromName") { type = NavType.StringType },
+                        navArgument("fromLatLng") { type = NavType.StringType },
+                        navArgument("toName") { type = NavType.StringType },
+                        navArgument("toLatLng") { type = NavType.StringType },
+                        navArgument("departureTime") { type = NavType.StringType },
+                        navArgument("mode") { type = NavType.StringType; defaultValue = "TRANSIT" }
                     )
                 ) { entry ->
-                    ReservationAddScreen(
-                        dateString = entry.arguments?.getString("date"),
-                        onNavigateBack = {
-                            navController.popBackStack()
-                        },
-                        onNavigateToRoutineAdd = {
-                            navController.navigate("routine_builder")
-                        }
-                    )
-                }
-
-                /* ------------------ Live Mode ------------------ */
-                composable(
-                    route = "live_mode/{routineId}",
-                    arguments = listOf(
-                        navArgument("routineId") { type = NavType.IntType }
-                    )
-                ) {
-                    LiveModeScreen(
-                        onFinishRoutine = {
+                    TransitRouteScreen(
+                        fromName = entry.arguments?.getString("fromName") ?: "",
+                        fromLatLng = entry.arguments?.getString("fromLatLng") ?: "",
+                        toName = entry.arguments?.getString("toName") ?: "",
+                        toLatLng = entry.arguments?.getString("toLatLng") ?: "",
+                        departureTime = entry.arguments?.getString("departureTime") ?: "09:00",
+                        onBack = { navController.popBackStack() },
+                        onRouteSelected = { draft ->
+                            navController.previousBackStackEntry?.savedStateHandle?.set("selected_transit_draft", draft)
                             navController.popBackStack()
                         }
                     )
                 }
 
-                /* ------------------ Stats ------------------ */
-                composable("stats") {
-                    StatsScreen()
+                composable("live_mode/{routineId}", arguments = listOf(navArgument("routineId") { type = NavType.LongType })) {
+                    LiveModeScreen(onFinishRoutine = { navController.popBackStack() })
                 }
 
-                /* ------------------ Settings ------------------ */
-                composable("settings") {
-                    SettingsScreen(
-                        onNavigateBack = {
-                            navController.popBackStack()
-                        },
-                        onNavigateToLogin = onLogOut
-                    )
-                }
+                composable("routine_list") { RoutineListScreen(onAddRoutineClick = { navController.navigate("routine_builder") }, onRoutineClick = { id -> navController.navigate("routine_builder?id=$id") }, onStartRoutineClick = { id -> navController.navigate("live_mode/$id") }, onSettingsClick = { navController.navigate("settings") }) }
+                composable("stats") { StatsScreen() }
+                composable("settings") { SettingsScreen(onNavigateBack = { navController.popBackStack() }, onNavigateToLogin = onLogOut) }
+                composable("onboarding") { OnboardingFlow(onComplete = { navController.navigate("home") { popUpTo("onboarding") { inclusive = true } } }) }
             }
         }
     }

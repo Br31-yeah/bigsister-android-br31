@@ -1,4 +1,3 @@
-
 package com.smwu.bigsister.ui.viewModel
 
 import androidx.lifecycle.SavedStateHandle
@@ -51,14 +50,19 @@ class LiveModeViewModel @Inject constructor(
 
     private var timerJob: Job? = null
     private var allSteps: List<StepEntity> = emptyList()
-    private var routineId: Long = 0L
     private var routineStartTime: Long = 0L
     private var plannedTotalDurationMillis: Long = 0L
 
     private var currentVoiceType: VoiceType = VoiceType.TSUNDERE
     private var isVoiceEnabled: Boolean = false
 
+    // ✅ 에러 해결: NavType.LongType으로 전달된 경우 Long으로, 혹시 모를 Int 경우까지 대비해 안전하게 가져옵니다.
+    private val routineId: Long = savedStateHandle.get<Long>("routineId")
+        ?: savedStateHandle.get<Int>("routineId")?.toLong()
+        ?: 0L
+
     init {
+        // 설정 로드
         viewModelScope.launch {
             isVoiceEnabled = settingsRepository.voiceAlarm.first()
             val typeString = settingsRepository.sisterType.first()
@@ -69,24 +73,34 @@ class LiveModeViewModel @Inject constructor(
             }
         }
 
-        savedStateHandle.get<Int>("routineId")?.toLong()?.let {
-            loadRoutine(it)
-        } ?: run {
+        // 루틴 로드 시작
+        if (routineId != 0L) {
+            loadRoutine(routineId)
+        } else {
             _uiState.update { it.copy(isLoading = false, isFinished = true) }
         }
     }
 
     private fun loadRoutine(id: Long) {
-        routineId = id
         routineStartTime = System.currentTimeMillis()
         viewModelScope.launch {
+            // routineRepository의 getRoutineWithSteps 호출
             val routineWithSteps = routineRepository.getRoutineWithSteps(id) ?: run {
                 _uiState.update { it.copy(isLoading = false, isFinished = true) }
                 return@launch
             }
+
             allSteps = routineWithSteps.steps
             plannedTotalDurationMillis = allSteps.sumOf { (it.calculatedDuration ?: it.baseDuration) * 60_000L }
-            _uiState.update { it.copy(routineTitle = routineWithSteps.routine.title, totalSteps = allSteps.size, isLoading = false) }
+
+            _uiState.update {
+                it.copy(
+                    routineTitle = routineWithSteps.routine.title,
+                    totalSteps = allSteps.size,
+                    isLoading = false
+                )
+            }
+
             speakSister(SisterEvent.START)
             startStep(0)
         }
@@ -99,7 +113,15 @@ class LiveModeViewModel @Inject constructor(
         }
         val step = allSteps[stepIndex]
         val durationMillis = (step.calculatedDuration ?: step.baseDuration) * 60_000L
-        _uiState.update { it.copy(currentStepIndex = stepIndex, currentStep = step, remainingTimeInMillis = durationMillis, isOvertime = false, overtimeInMillis = 0) }
+        _uiState.update {
+            it.copy(
+                currentStepIndex = stepIndex,
+                currentStep = step,
+                remainingTimeInMillis = durationMillis,
+                isOvertime = false,
+                overtimeInMillis = 0
+            )
+        }
         startTimer(durationMillis)
     }
 
@@ -127,6 +149,7 @@ class LiveModeViewModel @Inject constructor(
                 } else {
                     val overtime = -remaining
                     _uiState.update { it.copy(remainingTimeInMillis = 0, isOvertime = true, overtimeInMillis = overtime) }
+                    // 10초마다 독설/알람
                     if (overtime > 0 && overtime % 10000L == 0L) speakSister(SisterEvent.LATE)
                 }
             }
@@ -151,11 +174,22 @@ class LiveModeViewModel @Inject constructor(
         timerJob?.cancel()
         _uiState.update { it.copy(isFinished = true) }
         speakSister(SisterEvent.FINISH)
+
         viewModelScope.launch {
             val completionTime = System.currentTimeMillis()
             val totalTimeMillis = completionTime - routineStartTime
             val currentUserId = userRepository.firebaseUser.value?.uid ?: ""
-            completionRepository.insertCompletion(CompletionEntity(routineId = routineId, userId = currentUserId, date = LocalDate.now().toString(), completedAt = completionTime, totalTime = totalTimeMillis / 1000, wasLate = totalTimeMillis > plannedTotalDurationMillis))
+
+            completionRepository.insertCompletion(
+                CompletionEntity(
+                    routineId = routineId,
+                    userId = currentUserId,
+                    date = LocalDate.now().toString(),
+                    completedAt = completionTime,
+                    totalTime = totalTimeMillis / 1000,
+                    wasLate = totalTimeMillis > plannedTotalDurationMillis
+                )
+            )
         }
     }
 

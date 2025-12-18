@@ -43,21 +43,8 @@ import com.smwu.bigsister.ui.component.WeeklyCalendar
 import com.smwu.bigsister.ui.theme.MintConfirm
 import com.smwu.bigsister.ui.viewModel.HomeViewModel
 import com.smwu.bigsister.ui.viewModel.ReservationViewModel
-import com.smwu.bigsister.ui.viewModel.TransitRouteViewModel
 import java.time.Instant
 import java.time.ZoneId
-
-//로그 확인용//
-@Composable
-fun DebugRouteTestScreen(
-    viewModel: TransitRouteViewModel = hiltViewModel()
-) {
-    Button(onClick = {
-        viewModel.testFetchTransitRoutes()
-    }) {
-        Text("대중교통 경로 테스트")
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +54,8 @@ fun HomeScreen(
     onNavigateToReservationAdd: (String) -> Unit,
     onNavigateToRoutineList: () -> Unit,
     onNavigateToStats: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onNavigateToLiveMode: (Long) -> Unit // ✅ 추가: 라이브 모드 이동 콜백
 ) {
     val selectedDate by homeViewModel.selectedDate.collectAsState()
     val todaySchedules by homeViewModel.todaySchedules.collectAsState()
@@ -82,25 +70,18 @@ fun HomeScreen(
             )
         }
     ) { padding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 20.dp)
         ) {
-
             WeeklyCalendar(
                 selectedDate = selectedDate,
                 onDateSelected = homeViewModel::setSelectedDate
             )
 
-            Spacer(Modifier.height(12.dp))//디버깅화면 없애고 24로 다시 바꾸기
-
-            // ✅ 여기 추가
-            DebugRouteTestScreen()
-
-            Spacer(Modifier.height(12.dp))//디버깅화면 없애고 24로 다시 바꾸기
+            Spacer(Modifier.height(24.dp))
 
             /* ---------- 오늘 일정 (핵심 영역) ---------- */
             Box(
@@ -121,7 +102,8 @@ fun HomeScreen(
                             ReservationCard(
                                 reservation = reservation,
                                 onStart = {
-                                    // TODO: 즉시 시작 (LiveMode 연결 예정)
+                                    // ✅ 수정: 루틴 ID를 넘겨주며 라이브 모드로 이동
+                                    onNavigateToLiveMode(reservation.routineId)
                                 },
                                 onCancel = {
                                     reservationViewModel.deleteReservation(reservation.id)
@@ -156,7 +138,6 @@ fun HomeScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
-
             Spacer(Modifier.height(24.dp))
         }
 
@@ -182,18 +163,12 @@ fun HomeScreen(
                             }
                             showDatePicker = false
                         }
-                    ) {
-                        Text("확인")
-                    }
+                    ) { Text("확인") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDatePicker = false }) {
-                        Text("취소")
-                    }
+                    TextButton(onClick = { showDatePicker = false }) { Text("취소") }
                 }
-            ) {
-                DatePicker(state = datePickerState)
-            }
+            ) { DatePicker(state = datePickerState) }
         }
     }
 }
