@@ -140,6 +140,10 @@ fun AppNavigation(
                         },
                         onSettingsClick = {
                             navController.navigate("settings")
+                        },
+                        // ✅ 추가: 홈 화면에서 "지금 시작" 클릭 시 라이브 모드로 이동
+                        onNavigateToLiveMode = { routineId ->
+                            navController.navigate("live_mode/$routineId")
                         }
                     )
                 }
@@ -233,7 +237,7 @@ fun AppNavigation(
                 composable(
                     route = "live_mode/{routineId}",
                     arguments = listOf(
-                        navArgument("routineId") { type = NavType.IntType }
+                        navArgument("routineId") { type = NavType.LongType } // IntType에서 LongType으로 수정 추천
                     )
                 ) {
                     LiveModeScreen(

@@ -53,15 +53,14 @@ fun HomeScreen(
     onNavigateToReservationAdd: (String) -> Unit,
     onNavigateToRoutineList: () -> Unit,
     onNavigateToStats: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onNavigateToLiveMode: (Long) -> Unit // ✅ 라이브 모드 이동 콜백
 ) {
     val selectedDate by homeViewModel.selectedDate.collectAsState()
     val todaySchedules by homeViewModel.todaySchedules.collectAsState()
     val userName by homeViewModel.userName.collectAsState()
 
     var showDatePicker by remember { mutableStateOf(false) }
-
-    // [중요] 한국 시간대 설정
     val koreaZoneId = ZoneId.of("Asia/Seoul")
 
     Scaffold(
@@ -74,10 +73,7 @@ fun HomeScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp)
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)
         ) {
             WeeklyCalendar(
                 selectedDate = selectedDate,
@@ -97,7 +93,10 @@ fun HomeScreen(
                         items(todaySchedules) { reservation ->
                             ReservationCard(
                                 reservation = reservation,
-                                onStart = { /* 시작 로직 */ },
+                                onStart = {
+                                    // ✅ 수정: 루틴 ID를 가지고 라이브 모드로 이동
+                                    onNavigateToLiveMode(reservation.routineId)
+                                },
                                 onCancel = { reservationViewModel.deleteReservation(reservation.id) }
                             )
                         }
@@ -121,8 +120,6 @@ fun HomeScreen(
         }
 
         if (showDatePicker) {
-            // [수정] systemDefault() -> koreaZoneId ("Asia/Seoul")
-            // 이제 달력 팝업도 한국 시간을 기준으로 열립니다.
             val datePickerState = rememberDatePickerState(
                 initialSelectedDateMillis = selectedDate.atStartOfDay(koreaZoneId).toInstant().toEpochMilli()
             )
@@ -131,8 +128,6 @@ fun HomeScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            // [수정] systemDefault() -> koreaZoneId
-                            // 선택한 날짜를 한국 시간으로 변환해서 저장
                             val newDate = Instant.ofEpochMilli(millis).atZone(koreaZoneId).toLocalDate()
                             homeViewModel.setSelectedDate(newDate)
                         }

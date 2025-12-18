@@ -231,7 +231,7 @@ fun RoutineCard(
             Button(
                 onClick = onStartClick,
                 modifier = Modifier
-                    .width(120.dp)
+                    .width(140.dp)
                     .height(40.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MintConfirm)

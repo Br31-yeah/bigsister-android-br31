@@ -1,4 +1,5 @@
 package com.smwu.bigsister.ui.viewModel
+
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
@@ -32,8 +33,6 @@ class HomeViewModel @Inject constructor(
     private val _userName = MutableStateFlow(Firebase.auth.currentUser?.displayName ?: "사용자")
     val userName: StateFlow<String> = _userName.asStateFlow()
 
-
-    // 한국 시간대 로직 반영
     private val _selectedDate = MutableStateFlow(LocalDate.now(ZoneId.of("Asia/Seoul")))
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
@@ -49,58 +48,58 @@ class HomeViewModel @Inject constructor(
                     user.reload().await()
                     _userName.value = user.displayName ?: "사용자"
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            } catch (e: Exception) { e.printStackTrace() }
         }
     }
 
-    fun setSelectedDate(date: LocalDate) {
-        _selectedDate.value = date
+    /**
+     * ✅ 캐릭터 및 성취도별 멘트 로직
+     */
+    fun getSisterMessage(character: String, achievementRate: Int): String {
+        return when (character) {
+            "TSUNDERE" -> when {
+                achievementRate >= 90 -> "흥, 딱히 네가 잘해서 기분 좋은 건 아냐. (완벽해!)"
+                achievementRate >= 60 -> "뭐, 나쁘진 않네. 내일은 좀 더 일찍 움직여봐."
+                else -> "너 진짜 이럴 거야? 당장 안 일어나면 국물도 없어!"
+            }
+            "REALISTIC" -> when {
+                achievementRate >= 90 -> "우리 동생 오늘 완전 갓생 살았네! 언니가 다 뿌듯해~"
+                achievementRate >= 60 -> "오늘 하루도 고생했어. 조금만 더 힘내볼까?"
+                else -> "속상해라... 오늘은 많이 힘들었지? 내일은 언니랑 같이 다시 해보자."
+            }
+            "AI" -> when {
+                achievementRate >= 90 -> "데이터 분석 결과, 목표 달성률이 최상위권입니다. 효율적입니다."
+                achievementRate >= 60 -> "준수한 성과입니다. 지속적인 수행 시 습관 형성 가능성이 높습니다."
+                else -> "경고: 루틴 이행률 저조. 시스템 최적화를 위해 즉시 수행이 필요합니다."
+            }
+            else -> "오늘도 언니랑 같이 힘내보자!"
+        }
     }
+
+    fun setSelectedDate(date: LocalDate) { _selectedDate.value = date }
 
     fun saveReservation(reservation: ReservationEntity) {
-        viewModelScope.launch {
-            routineRepository.saveReservation(reservation)
-        }
+        viewModelScope.launch { routineRepository.saveReservation(reservation) }
     }
 
     fun deleteReservation(reservationId: Long) {
-        viewModelScope.launch {
-            routineRepository.deleteReservation(reservationId)
-        }
+        viewModelScope.launch { routineRepository.deleteReservation(reservationId) }
     }
 
-    /** ✅ 핵심 수정: reservationRepository 대신 routineRepository를 통해 사용자 ID 필터링된 데이터 조회 */
     @OptIn(ExperimentalCoroutinesApi::class)
     val todaySchedules: StateFlow<List<ReservationEntity>> =
-        selectedDate
-            .flatMapLatest { date ->
-                routineRepository.getReservationsByDate(date.toString())
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyList()
-            )
+        selectedDate.flatMapLatest { date -> routineRepository.getReservationsByDate(date.toString()) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val routines: StateFlow<List<RoutineEntity>> =
         routineRepository.getAllRoutines()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyList()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    suspend fun calculateTotalDuration(routineId: Long): Long {
-        return stepRepository.calculateTotalDurationOnce(routineId)
-    }
+    suspend fun calculateTotalDuration(routineId: Long): Long = stepRepository.calculateTotalDurationOnce(routineId)
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getWeekDates(date: LocalDate): List<LocalDate> {
         val start = date.minusDays(date.dayOfWeek.ordinal.toLong())
         return List(7) { start.plusDays(it.toLong()) }
     }
-
-    fun formatDuration(min: Long): String = "${min}분"
 }

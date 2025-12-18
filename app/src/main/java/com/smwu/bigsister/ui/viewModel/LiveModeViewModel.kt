@@ -1,4 +1,3 @@
-
 package com.smwu.bigsister.ui.viewModel
 
 import androidx.lifecycle.SavedStateHandle
@@ -60,6 +59,7 @@ class LiveModeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            // 사용자 설정 로드
             isVoiceEnabled = settingsRepository.voiceAlarm.first()
             val typeString = settingsRepository.sisterType.first()
             currentVoiceType = when (typeString) {
@@ -69,8 +69,10 @@ class LiveModeViewModel @Inject constructor(
             }
         }
 
-        savedStateHandle.get<Int>("routineId")?.toLong()?.let {
-            loadRoutine(it)
+        // ✅ 수정: ClassCastException 방지를 위해 get<Long>으로 직접 수신
+        // AppNavigation의 NavType.LongType과 일치시킵니다.
+        savedStateHandle.get<Long>("routineId")?.let { id ->
+            loadRoutine(id)
         } ?: run {
             _uiState.update { it.copy(isLoading = false, isFinished = true) }
         }
@@ -86,7 +88,13 @@ class LiveModeViewModel @Inject constructor(
             }
             allSteps = routineWithSteps.steps
             plannedTotalDurationMillis = allSteps.sumOf { (it.calculatedDuration ?: it.baseDuration) * 60_000L }
-            _uiState.update { it.copy(routineTitle = routineWithSteps.routine.title, totalSteps = allSteps.size, isLoading = false) }
+            _uiState.update {
+                it.copy(
+                    routineTitle = routineWithSteps.routine.title,
+                    totalSteps = allSteps.size,
+                    isLoading = false
+                )
+            }
             speakSister(SisterEvent.START)
             startStep(0)
         }
@@ -99,7 +107,15 @@ class LiveModeViewModel @Inject constructor(
         }
         val step = allSteps[stepIndex]
         val durationMillis = (step.calculatedDuration ?: step.baseDuration) * 60_000L
-        _uiState.update { it.copy(currentStepIndex = stepIndex, currentStep = step, remainingTimeInMillis = durationMillis, isOvertime = false, overtimeInMillis = 0) }
+        _uiState.update {
+            it.copy(
+                currentStepIndex = stepIndex,
+                currentStep = step,
+                remainingTimeInMillis = durationMillis,
+                isOvertime = false,
+                overtimeInMillis = 0
+            )
+        }
         startTimer(durationMillis)
     }
 
@@ -126,7 +142,10 @@ class LiveModeViewModel @Inject constructor(
                     }
                 } else {
                     val overtime = -remaining
-                    _uiState.update { it.copy(remainingTimeInMillis = 0, isOvertime = true, overtimeInMillis = overtime) }
+                    _uiState.update {
+                        it.copy(remainingTimeInMillis = 0, isOvertime = true, overtimeInMillis = overtime)
+                    }
+                    // 10초마다 독촉 멘트
                     if (overtime > 0 && overtime % 10000L == 0L) speakSister(SisterEvent.LATE)
                 }
             }
@@ -155,7 +174,16 @@ class LiveModeViewModel @Inject constructor(
             val completionTime = System.currentTimeMillis()
             val totalTimeMillis = completionTime - routineStartTime
             val currentUserId = userRepository.firebaseUser.value?.uid ?: ""
-            completionRepository.insertCompletion(CompletionEntity(routineId = routineId, userId = currentUserId, date = LocalDate.now().toString(), completedAt = completionTime, totalTime = totalTimeMillis / 1000, wasLate = totalTimeMillis > plannedTotalDurationMillis))
+            completionRepository.insertCompletion(
+                CompletionEntity(
+                    routineId = routineId,
+                    userId = currentUserId,
+                    date = LocalDate.now().toString(),
+                    completedAt = completionTime,
+                    totalTime = totalTimeMillis / 1000,
+                    wasLate = totalTimeMillis > plannedTotalDurationMillis
+                )
+            )
         }
     }
 
