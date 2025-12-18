@@ -7,7 +7,6 @@ import com.smwu.bigsister.data.local.StepEntity
 
 /**
  * Firestore에 저장되는 루틴 문서
- * ✅ 수정사항: isActive -> active 로 변경 (Firestore 필드명 일치)
  */
 data class RoutineDocument(
     val id: Long = 0L,
@@ -17,9 +16,9 @@ data class RoutineDocument(
     val totalDuration: Long = 0L,
     val active: Boolean = true
 ) {
-    // Firestore deserialization을 위한 빈 생성자
     constructor() : this(0L, "", "", 0L, 0L, true)
 
+    // Entity -> Document 변환 (저장 시 사용)
     constructor(entity: RoutineEntity) : this(
         id = entity.id,
         userId = entity.userId,
@@ -27,6 +26,17 @@ data class RoutineDocument(
         createdAt = entity.createdAt,
         totalDuration = entity.totalDuration,
         active = entity.isActive
+    )
+
+    // Document -> Entity 변환 (불러오기 시 사용)
+    // ✅ 명시적 이름 지정으로 타입 미스매치 방지
+    fun toEntity(): RoutineEntity = RoutineEntity(
+        id = id,
+        userId = userId,
+        title = title,
+        createdAt = createdAt,
+        totalDuration = totalDuration,
+        isActive = active
     )
 }
 
@@ -51,18 +61,26 @@ data class StepDocument(
         baseDuration = entity.baseDuration,
         calculatedDuration = entity.calculatedDuration
     )
+
+    fun toEntity(): StepEntity = StepEntity(
+        id = id,
+        routineId = routineId,
+        orderIndex = orderIndex,
+        name = name,
+        baseDuration = baseDuration,
+        calculatedDuration = calculatedDuration
+    )
 }
 
 /**
- * Firestore에 저장되는 예약(홈 화면 리스트) 문서
- * ✅ 수정사항: startTime, endTime 필드 추가 및 타입 통일
+ * Firestore에 저장되는 예약 문서
  */
 data class ReservationDocument(
     val id: Long = 0L,
     val userId: String = "",
     val routineId: Long = 0L,
-    val date: String = "",         // yyyy-MM-dd
-    val startTime: String = "",    // HH:mm
+    val date: String = "",
+    val startTime: String = "",
     val endTime: String? = null,
     val routineTitle: String = ""
 ) {
@@ -77,6 +95,16 @@ data class ReservationDocument(
         endTime = entity.endTime,
         routineTitle = entity.routineTitle
     )
+
+    fun toEntity(): ReservationEntity = ReservationEntity(
+        id = id,
+        userId = userId,
+        routineId = routineId,
+        date = date,
+        startTime = startTime,
+        endTime = endTime,
+        routineTitle = routineTitle
+    )
 }
 
 /**
@@ -87,17 +115,32 @@ data class CompletionDocument(
     val userId: String = "",
     val routineId: Long? = null,
     val date: String = "",
+    val completedAt: Long = 0L,
     val totalTime: Long = 0L,
     val wasLate: Boolean = false
 ) {
-    constructor() : this(0L, "", null, "", 0L, false)
+    constructor() : this(0L, "", null, "", 0L, 0L, false)
 
+    // Entity -> Document
     constructor(entity: CompletionEntity) : this(
         id = entity.id,
         userId = entity.userId,
         routineId = entity.routineId,
         date = entity.date,
+        completedAt = entity.completedAt,
         totalTime = entity.totalTime,
         wasLate = entity.wasLate
+    )
+
+    // Document -> Entity
+    // ✅ 에러 로그의 'Long?' vs 'Boolean' 충돌은 여기서 파라미터 순서가 꼬였기 때문입니다.
+    fun toEntity(): CompletionEntity = CompletionEntity(
+        id = id,
+        userId = userId,
+        routineId = routineId ?: 0L,
+        date = date,
+        completedAt = completedAt,
+        totalTime = totalTime,
+        wasLate = wasLate
     )
 }
