@@ -2,18 +2,7 @@ package com.smwu.bigsister.ui.routine
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -25,17 +14,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.DirectionsCar
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,12 +36,13 @@ import com.smwu.bigsister.ui.viewModel.RoutineViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutineListScreen(
-    viewModel: RoutineViewModel = hiltViewModel(),
     onAddRoutineClick: () -> Unit,
     onRoutineClick: (Long) -> Unit,
     onStartRoutineClick: (Long) -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    viewModel: RoutineViewModel = hiltViewModel() // 파라미터 순서 조정 및 기본값 유지
 ) {
+    // 1번 브랜치의 collectAsState 초기값 로직 적용
     val routineList by viewModel.routineListWithSteps.collectAsState(initial = emptyList())
 
     Scaffold(
@@ -78,11 +58,7 @@ fun RoutineListScreen(
                 },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "설정",
-                            tint = Color.Black
-                        )
+                        Icon(Icons.Default.Settings, contentDescription = "설정", tint = Color.Black)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -95,15 +71,13 @@ fun RoutineListScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp)
+            contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp) // 하단 여백 유지
         ) {
-
+            // 빈 상태 처리
             if (routineList.isEmpty()) {
                 item {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("저장된 루틴이 없어요 😢", color = TextGray)
@@ -111,25 +85,21 @@ fun RoutineListScreen(
                 }
             }
 
-            items(routineList) { routine ->
+            // 루틴 리스트 아이템
+            items(items = routineList, key = { it.routine.id }) { routine ->
                 RoutineCard(
                     data = routine,
                     onEditClick = { onRoutineClick(routine.routine.id) },
-                    onDeleteClick = {
-                        viewModel.deleteRoutine(routine.routine.id)
-                    },
-                    onStartClick = {
-                        onStartRoutineClick(routine.routine.id)
-                    }
+                    onDeleteClick = { viewModel.deleteRoutine(routine.routine.id) },
+                    onStartClick = { onStartRoutineClick(routine.routine.id) }
                 )
             }
 
+            // 새 루틴 만들기 버튼
             item {
                 Button(
                     onClick = onAddRoutineClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PurpleLight,
@@ -138,7 +108,7 @@ fun RoutineListScreen(
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("새 루틴 만들기", fontSize = 16.sp)
+                    Text("새 루틴 만들기", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -152,25 +122,19 @@ fun RoutineCard(
     onDeleteClick: () -> Unit,
     onStartClick: () -> Unit
 ) {
-    val totalMinutes = data.steps.sumOf {
-        it.calculatedDuration ?: it.baseDuration
-    }
-
-    val timeText =
-        if (totalMinutes >= 60)
-            "${totalMinutes / 60}시간 ${totalMinutes % 60}분"
-        else
-            "${totalMinutes}분"
+    // 시간 계산 로직 (시간/분 표시 통합)
+    val totalMinutes = data.steps.sumOf { it.calculatedDuration ?: it.baseDuration }
+    val timeText = if (totalMinutes >= 60) "${totalMinutes / 60}시간 ${totalMinutes % 60}분" else "${totalMinutes}분"
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, Color(0xFFF2F2F7)),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(Modifier.padding(20.dp)) {
-
+            /* 상단 영역: 제목 및 수정/삭제 */
             Row(verticalAlignment = Alignment.Top) {
                 Box(
                     modifier = Modifier
@@ -210,35 +174,45 @@ fun RoutineCard(
 
             Spacer(Modifier.height(16.dp))
 
+            /* 단계 미리보기 영역 (최대 3개) */
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 data.steps.take(3).forEach { step ->
                     val duration = step.calculatedDuration ?: step.baseDuration
-
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Rounded.DirectionsCar,
                             contentDescription = null,
-                            tint = TextGray
+                            tint = TextGray,
+                            modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("${step.name} · ${duration}분", fontSize = 14.sp)
+                        Text(
+                            text = "${step.name} · ${duration}분",
+                            fontSize = 14.sp,
+                            color = Color.DarkGray
+                        )
                     }
                 }
             }
 
             Spacer(Modifier.height(20.dp))
 
+            /* 하단 시작 버튼 */
             Button(
                 onClick = onStartClick,
                 modifier = Modifier
-                    .width(140.dp)
+                    .width(120.dp)
                     .height(40.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MintConfirm)
             ) {
-                Icon(Icons.Rounded.AccessTime, contentDescription = null)
-                Spacer(Modifier.width(4.dp))
-                Text("바로 시작", fontSize = 14.sp)
+                Icon(
+                    imageVector = Icons.Rounded.AccessTime,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text("바로 시작", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

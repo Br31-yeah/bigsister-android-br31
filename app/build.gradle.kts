@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,40 +7,43 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 
-    // 🔥 Firebase 플러그인
+    // 🔥 Firebase 및 유틸리티 플러그인
     id("com.google.gms.google-services")
+    id("kotlin-parcelize") // ✅ TransitStepDraft 등을 위해 필수
 }
+
+// local.properties 파일 읽기 로직
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
+// 파일에서 키 값 추출 (없을 경우 빈 문자열)
+val googleKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY") ?: ""
+val odsayKey = localProperties.getProperty("ODSAY_API_KEY") ?: ""
+val routesKey = localProperties.getProperty("ROUTES_API_KEY") ?: ""
 
 android {
     namespace = "com.smwu.bigsister"
-    compileSdk = 36 // ✅ 에러 해결을 위해 36으로 변경
+    compileSdk = 36 // ✅ 최신 SDK 대응
 
     defaultConfig {
         applicationId = "com.smwu.bigsister"
         minSdk = 24
-        targetSdk = 36 // ✅ 에러 해결을 위해 36으로 변경
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 🔹 ODsay API Key
-        buildConfigField(
-            "String",
-            "ODSAY_API_KEY",
-            "\"${project.findProperty("ODSAY_API_KEY") ?: ""}\""
-        )
+        // 🔹 BuildConfig에 API 키 주입 (코드에서 BuildConfig.XXX로 사용)
+        buildConfigField("String", "ODSAY_API_KEY", "\"$odsayKey\"")
+        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$googleKey\"")
+        buildConfigField("String", "ROUTES_API_KEY", "\"$routesKey\"")
 
-        // 🔹 Google Directions API Key
-        buildConfigField(
-            "String",
-            "GOOGLE_MAPS_API_KEY",
-            "\"${project.findProperty("GOOGLE_MAPS_API_KEY") ?: ""}\""
-        )
-
-        // 🔹 Google Maps SDK
-        manifestPlaceholders["MAPS_API_KEY"] =
-            project.findProperty("GOOGLE_MAPS_API_KEY") ?: ""
+        // 🔹 Manifest에 API 키 주입 (AndroidManifest.xml의 ${MAPS_API_KEY}에 대응)
+        manifestPlaceholders["MAPS_API_KEY"] = googleKey
     }
 
     buildTypes {
@@ -63,7 +68,7 @@ android {
 
     buildFeatures {
         compose = true
-        buildConfig = true
+        buildConfig = true // ✅ BuildConfig 클래스 생성을 위해 필수
     }
 
     composeOptions {
@@ -72,7 +77,6 @@ android {
 }
 
 dependencies {
-
     // ===============================
     // AndroidX Core & Lifecycle
     // ===============================
@@ -124,8 +128,6 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-messaging")
-
-    // Task.await() 지원
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     // ===============================
@@ -134,7 +136,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.maps.android:maps-compose:4.4.1")
-    // build.gradle (app) log 용
+    implementation("com.google.maps.android:maps-utils-ktx:5.0.0")
+    implementation("com.google.maps.android:android-maps-utils:3.8.2")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // ===============================

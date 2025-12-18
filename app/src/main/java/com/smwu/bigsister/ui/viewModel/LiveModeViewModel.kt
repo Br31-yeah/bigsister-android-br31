@@ -50,7 +50,7 @@ class LiveModeViewModel @Inject constructor(
 
     private var timerJob: Job? = null
     private var allSteps: List<StepEntity> = emptyList()
-    private var routineId: Long = 0L
+    private var routineId: Long = 0L // 클래스 레벨에서 관리
     private var routineStartTime: Long = 0L
     private var plannedTotalDurationMillis: Long = 0L
 
@@ -58,6 +58,7 @@ class LiveModeViewModel @Inject constructor(
     private var isVoiceEnabled: Boolean = false
 
     init {
+        // 1. 설정 및 ID 로드
         viewModelScope.launch {
             // 사용자 설정 로드
             isVoiceEnabled = settingsRepository.voiceAlarm.first()
@@ -67,14 +68,17 @@ class LiveModeViewModel @Inject constructor(
                 "AI" -> VoiceType.AI
                 else -> VoiceType.TSUNDERE
             }
-        }
 
-        // ✅ 수정: ClassCastException 방지를 위해 get<Long>으로 직접 수신
-        // AppNavigation의 NavType.LongType과 일치시킵니다.
-        savedStateHandle.get<Long>("routineId")?.let { id ->
-            loadRoutine(id)
-        } ?: run {
-            _uiState.update { it.copy(isLoading = false, isFinished = true) }
+            // ✅ 1번 브랜치의 안전한 ID 추출 로직 적용 (Long/Int 호환)
+            val extractedId = savedStateHandle.get<Long>("routineId")
+                ?: savedStateHandle.get<Int>("routineId")?.toLong()
+                ?: 0L
+
+            if (extractedId != 0L) {
+                loadRoutine(extractedId)
+            } else {
+                _uiState.update { it.copy(isLoading = false, isFinished = true) }
+            }
         }
     }
 
@@ -86,8 +90,10 @@ class LiveModeViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false, isFinished = true) }
                 return@launch
             }
+
             allSteps = routineWithSteps.steps
             plannedTotalDurationMillis = allSteps.sumOf { (it.calculatedDuration ?: it.baseDuration) * 60_000L }
+
             _uiState.update {
                 it.copy(
                     routineTitle = routineWithSteps.routine.title,
@@ -95,6 +101,7 @@ class LiveModeViewModel @Inject constructor(
                     isLoading = false
                 )
             }
+
             speakSister(SisterEvent.START)
             startStep(0)
         }
@@ -170,10 +177,12 @@ class LiveModeViewModel @Inject constructor(
         timerJob?.cancel()
         _uiState.update { it.copy(isFinished = true) }
         speakSister(SisterEvent.FINISH)
+
         viewModelScope.launch {
             val completionTime = System.currentTimeMillis()
             val totalTimeMillis = completionTime - routineStartTime
             val currentUserId = userRepository.firebaseUser.value?.uid ?: ""
+
             completionRepository.insertCompletion(
                 CompletionEntity(
                     routineId = routineId,

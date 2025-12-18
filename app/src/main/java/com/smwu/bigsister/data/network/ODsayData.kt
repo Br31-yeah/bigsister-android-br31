@@ -47,11 +47,3 @@ data class ODsayStationResponse(
 data class ODsayStationResult(
     val station: List<StationInfo>?
 )
-
-data class StationInfo(
-    val stationName: String, // 역 이름 (예: 강남)
-    val stationID: Int,      // 역 ID
-    val x: Double,           // 경도 (Longitude)
-    val y: Double,           // 위도 (Latitude)
-    val laneName: String     // 노선 이름 (예: 서울 2호선)
-)

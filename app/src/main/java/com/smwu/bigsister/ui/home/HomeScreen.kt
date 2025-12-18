@@ -1,36 +1,16 @@
 package com.smwu.bigsister.ui.home
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,37 +34,48 @@ fun HomeScreen(
     onNavigateToRoutineList: () -> Unit,
     onNavigateToStats: () -> Unit,
     onSettingsClick: () -> Unit,
-    onNavigateToLiveMode: (Long) -> Unit // ✅ 라이브 모드 이동 콜백
+    onNavigateToLiveMode: (Long) -> Unit // ✅ 라이브 모드 이동 콜백 유지
 ) {
+    // 1번+2번 상태 통합
     val selectedDate by homeViewModel.selectedDate.collectAsState()
     val todaySchedules by homeViewModel.todaySchedules.collectAsState()
-    val userName by homeViewModel.userName.collectAsState()
+    val userName by homeViewModel.userName.collectAsState() // ✅ 2번 브랜치: 유저 이름 추가
 
     var showDatePicker by remember { mutableStateOf(false) }
-    val koreaZoneId = ZoneId.of("Asia/Seoul")
+    val koreaZoneId = ZoneId.of("Asia/Seoul") // ✅ 2번 브랜치: 한국 시간대 고정
 
     Scaffold(
         topBar = {
             HomeTopBar(
                 currentMonth = selectedDate.monthValue,
-                userName = userName,
+                userName = userName, // ✅ 2번 브랜치: 이름 전달 로직 유지
                 onCalendarClick = { showDatePicker = true }
             )
         }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp)
         ) {
             WeeklyCalendar(
                 selectedDate = selectedDate,
-                onDateSelected = { homeViewModel.setSelectedDate(it) }
+                onDateSelected = homeViewModel::setSelectedDate
             )
 
             Spacer(Modifier.height(24.dp))
 
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            /* ---------- 오늘 일정 리스트 ---------- */
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
                 if (todaySchedules.isEmpty()) {
-                    EmptyRoutineState { onNavigateToReservationAdd(selectedDate.toString()) }
+                    EmptyRoutineState {
+                        onNavigateToReservationAdd(selectedDate.toString())
+                    }
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -94,10 +85,13 @@ fun HomeScreen(
                             ReservationCard(
                                 reservation = reservation,
                                 onStart = {
-                                    // ✅ 수정: 루틴 ID를 가지고 라이브 모드로 이동
+                                    // ✅ 1번 브랜치: 루틴 ID를 넘겨주며 라이브 모드로 이동
                                     onNavigateToLiveMode(reservation.routineId)
                                 },
-                                onCancel = { reservationViewModel.deleteReservation(reservation.id) }
+                                onCancel = {
+                                    // ✅ 1번 브랜치: 삭제 로직 유지
+                                    reservationViewModel.deleteReservation(reservation.id)
+                                }
                             )
                         }
                     }
@@ -106,33 +100,54 @@ fun HomeScreen(
 
             Spacer(Modifier.height(16.dp))
 
+            /* ---------- 하단 예약 추가 버튼 ---------- */
             Button(
-                onClick = { onNavigateToReservationAdd(selectedDate.toString()) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                onClick = {
+                    onNavigateToReservationAdd(selectedDate.toString())
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MintConfirm)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MintConfirm,
+                    contentColor = Color.White
+                )
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("예약 추가", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "예약 추가",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
             Spacer(Modifier.height(24.dp))
         }
 
+        /* ---------- 날짜 선택 다이얼로그 (한국 시간대 적용) ---------- */
         if (showDatePicker) {
             val datePickerState = rememberDatePickerState(
-                initialSelectedDateMillis = selectedDate.atStartOfDay(koreaZoneId).toInstant().toEpochMilli()
+                initialSelectedDateMillis = selectedDate
+                    .atStartOfDay(koreaZoneId)
+                    .toInstant()
+                    .toEpochMilli()
             )
+
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
                 confirmButton = {
-                    TextButton(onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            val newDate = Instant.ofEpochMilli(millis).atZone(koreaZoneId).toLocalDate()
-                            homeViewModel.setSelectedDate(newDate)
+                    TextButton(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                val newDate = Instant.ofEpochMilli(millis)
+                                    .atZone(koreaZoneId)
+                                    .toLocalDate()
+                                homeViewModel.setSelectedDate(newDate)
+                            }
+                            showDatePicker = false
                         }
-                        showDatePicker = false
-                    }) { Text("확인") }
+                    ) { Text("확인") }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDatePicker = false }) { Text("취소") }

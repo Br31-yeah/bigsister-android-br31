@@ -77,4 +77,21 @@ object RetrofitClient {
         .client(googleOkHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
+
+
+    /* ────────────────────────────────
+   Google Routes API (NEW)
+──────────────────────────────── */
+
+    private const val GOOGLE_ROUTES_BASE_URL = "https://routes.googleapis.com/"
+
+    private val googleRoutesOkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(loggingInterceptor)
+        .build()
+
+    val googleRoutesRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(GOOGLE_ROUTES_BASE_URL)
+        .client(googleRoutesOkHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
 }
