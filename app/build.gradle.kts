@@ -36,6 +36,13 @@ android {
             "\"${project.findProperty("GOOGLE_MAPS_API_KEY") ?: ""}\""
         )
 
+        // google Routes API Key
+        buildConfigField(
+            "String",
+            "ROUTES_API_KEY",
+            "\"${project.findProperty("ROUTES_API_KEY") ?: ""}\""
+        )
+
         // 🔹 Google Maps SDK
         manifestPlaceholders["MAPS_API_KEY"] =
             project.findProperty("GOOGLE_MAPS_API_KEY") ?: ""

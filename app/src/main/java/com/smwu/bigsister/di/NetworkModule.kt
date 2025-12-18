@@ -1,6 +1,7 @@
 package com.smwu.bigsister.di
 
 import com.smwu.bigsister.data.network.GoogleDirectionsService
+import com.smwu.bigsister.data.network.GoogleRoutesService
 import com.smwu.bigsister.data.network.ODsayService
 import com.smwu.bigsister.data.remote.RetrofitClient
 import dagger.Module
@@ -30,4 +31,11 @@ object NetworkModule {
         return RetrofitClient.googleRetrofit
             .create(GoogleDirectionsService::class.java)
     }
+
+    /* ───────── Google Routes (NEW) ───────── */
+
+    @Provides
+    @Singleton
+    fun provideGoogleRoutesService(): GoogleRoutesService =
+        RetrofitClient.googleRoutesRetrofit.create(GoogleRoutesService::class.java)
 }

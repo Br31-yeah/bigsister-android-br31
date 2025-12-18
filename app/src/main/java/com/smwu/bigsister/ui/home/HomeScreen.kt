@@ -43,8 +43,21 @@ import com.smwu.bigsister.ui.component.WeeklyCalendar
 import com.smwu.bigsister.ui.theme.MintConfirm
 import com.smwu.bigsister.ui.viewModel.HomeViewModel
 import com.smwu.bigsister.ui.viewModel.ReservationViewModel
+import com.smwu.bigsister.ui.viewModel.TransitRouteViewModel
 import java.time.Instant
 import java.time.ZoneId
+
+//로그 확인용//
+@Composable
+fun DebugRouteTestScreen(
+    viewModel: TransitRouteViewModel = hiltViewModel()
+) {
+    Button(onClick = {
+        viewModel.testFetchTransitRoutes()
+    }) {
+        Text("대중교통 경로 테스트")
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +95,12 @@ fun HomeScreen(
                 onDateSelected = homeViewModel::setSelectedDate
             )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))//디버깅화면 없애고 24로 다시 바꾸기
+
+            // ✅ 여기 추가
+            DebugRouteTestScreen()
+
+            Spacer(Modifier.height(12.dp))//디버깅화면 없애고 24로 다시 바꾸기
 
             /* ---------- 오늘 일정 (핵심 영역) ---------- */
             Box(
