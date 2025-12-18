@@ -4,11 +4,14 @@ import android.util.Log
 import androidx.room.Transaction
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.smwu.bigsister.data.local.ReservationEntity
 import com.smwu.bigsister.data.local.RoutineEntity
 import com.smwu.bigsister.data.local.RoutineWithSteps
 import com.smwu.bigsister.data.local.StepEntity
+import com.smwu.bigsister.data.local.dao.ReservationDao
 import com.smwu.bigsister.data.local.dao.RoutineDao
 import com.smwu.bigsister.data.local.dao.StepDao
+import com.smwu.bigsister.data.remote.ReservationDocument
 import com.smwu.bigsister.data.remote.RoutineDocument
 import com.smwu.bigsister.data.remote.StepDocument
 import kotlinx.coroutines.flow.Flow
@@ -22,9 +25,20 @@ import javax.inject.Singleton
 class RoutineRepository @Inject constructor(
     private val routineDao: RoutineDao,
     private val stepDao: StepDao,
+    private val reservationDao: ReservationDao,
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth
 ) {
+
+    /** ✅ HomeViewModel용: 내 예약 목록만 날짜별로 가져오기 */
+    fun getReservationsByDate(date: String): Flow<List<ReservationEntity>> {
+        val user = auth.currentUser
+        return if (user != null) {
+            reservationDao.getReservationsForDate(date, user.uid)
+        } else {
+            emptyFlow()
+        }
+    }
 
     /** HomeViewModel 용: 내 루틴만 가져오기 */
     fun getAllRoutines(): Flow<List<RoutineEntity>> {
@@ -55,75 +69,73 @@ class RoutineRepository @Inject constructor(
         routineDao.getRoutineById(id).first()
             ?: throw IllegalStateException("Routine not found: $id")
 
-    /** * ✅ [추가] SettingsViewModel 에러 해결용: 로컬 데이터 일괄 삭제
-     * 로그아웃이나 회원탈퇴 시 호출됩니다.
-     */
+    /** ✅ 로그아웃 및 회원탈퇴 시 로컬 데이터 일괄 삭제 */
     suspend fun clearAllLocalData() {
         val user = auth.currentUser
         if (user != null) {
             routineDao.deleteRoutinesByUserId(user.uid)
-            // 하위 step들은 RoutineEntity 삭제 시 Cascade(연쇄삭제) 되거나
-            // 수동으로 지우려면 아래를 추가하세요.
+            reservationDao.deleteReservationsByUserId(user.uid)
         }
     }
 
-    /* ────────────────────────────────
-       💾 저장 로직 (데이터 유실 방지 및 에러 해결)
-    ──────────────────────────────── */
+    /** ✅ 예약 저장 및 Firestore 서버 업로드 */
+    suspend fun saveReservation(reservation: ReservationEntity) {
+        val user = auth.currentUser ?: return
+        val generatedId = reservationDao.insertReservation(reservation.copy(userId = user.uid))
+        try {
+            val resDoc = ReservationDocument(reservation.copy(id = generatedId, userId = user.uid))
+            firestore.collection("users").document(user.uid)
+                .collection("reservations").document(generatedId.toString())
+                .set(resDoc).await()
+            Log.d("RESERVATION_SYNC", "예약 서버 저장 성공: $generatedId")
+        } catch (e: Exception) {
+            Log.e("RESERVATION_SYNC", "예약 서버 저장 실패", e)
+        }
+    }
 
+    /** ✅ 예약 삭제 시 서버에서도 삭제 */
+    suspend fun deleteReservation(reservationId: Long) {
+        val user = auth.currentUser ?: return
+        try {
+            reservationDao.deleteReservationById(reservationId)
+            firestore.collection("users").document(user.uid)
+                .collection("reservations").document(reservationId.toString())
+                .delete().await()
+        } catch (e: Exception) {
+            Log.e("RESERVATION_SYNC", "예약 서버 삭제 실패", e)
+        }
+    }
+
+    /** ✅ 루틴과 단계 저장 로직 */
     @Transaction
     suspend fun saveRoutineWithSteps(
         userId: String,
         routine: RoutineEntity,
         steps: List<StepEntity>
     ): Long {
-        // 1. 로컬 DB(Room)에 루틴 저장 및 생성된 ID 획득
         val routineId = routineDao.insertRoutine(routine.copy(userId = userId))
-
-        // 2. 해당 루틴 ID를 참조하도록 Step들의 정보 업데이트 후 저장
         stepDao.deleteStepsByRoutineId(routineId)
         val updatedSteps = steps.map { it.copy(routineId = routineId) }
-
-        // StepDao가 List<Long>을 반환하므로 정상적으로 대입됩니다.
-        val stepIds: List<Long> = stepDao.insertSteps(updatedSteps)
+        val stepIds = stepDao.insertSteps(updatedSteps)
 
         try {
-            // mapIndexed를 사용하여 로컬 DB의 실제 ID를 입힙니다.
             val stepsWithRealIds = updatedSteps.mapIndexed { index, step ->
-                val generatedId = stepIds.getOrNull(index) ?: step.id
-                step.copy(id = generatedId)
+                step.copy(id = stepIds.getOrNull(index) ?: step.id)
             }
-
-            // 3. Firestore 동기화 호출
-            uploadRoutineToFirestore(
-                userId,
-                routine.copy(id = routineId, userId = userId),
-                stepsWithRealIds
-            )
+            uploadRoutineToFirestore(userId, routine.copy(id = routineId, userId = userId), stepsWithRealIds)
         } catch (e: Exception) {
             Log.e("RoutineRepository", "Firestore 업로드 실패", e)
         }
-
         return routineId
     }
 
-    private suspend fun uploadRoutineToFirestore(
-        userId: String,
-        routine: RoutineEntity,
-        steps: List<StepEntity>
-    ) {
+    private suspend fun uploadRoutineToFirestore(userId: String, routine: RoutineEntity, steps: List<StepEntity>) {
         if (userId.isBlank()) return
+        val routineRef = firestore.collection("users").document(userId)
+            .collection("routines").document(routine.id.toString())
 
-        // 경로: users/{userId}/routines/{routineId}
-        val routineRef = firestore.collection("users")
-            .document(userId)
-            .collection("routines")
-            .document(routine.id.toString())
-
-        // 루틴 기본 메타데이터 저장
         routineRef.set(RoutineDocument(routine)).await()
 
-        // 하위 'steps' 컬렉션에 각 단계를 개별 문서로 저장 (batch 사용)
         val batch = firestore.batch()
         steps.forEach { step ->
             val stepRef = routineRef.collection("steps").document(step.id.toString())
@@ -132,36 +144,17 @@ class RoutineRepository @Inject constructor(
         batch.commit().await()
     }
 
-    /* ────────────────────────────────
-       🗑 삭제 및 동기화
-    ──────────────────────────────── */
-
-    suspend fun deleteRoutineById(routineId: Long) {
-        try {
-            val routine = getRoutineByIdOnce(routineId)
-            routineDao.deleteRoutineById(routine.id)
-            stepDao.deleteStepsByRoutineId(routine.id)
-
-            if (routine.userId.isNotBlank()) {
-                firestore.collection("users")
-                    .document(routine.userId)
-                    .collection("routines")
-                    .document(routine.id.toString())
-                    .delete()
-            }
-        } catch (e: Exception) {
-            Log.e("RoutineRepository", "삭제 실패", e)
-        }
-    }
-
-    /** 서버 데이터를 로컬로 가져오기 (로그인 시 호출) */
+    /** ✅ 서버 데이터를 로컬로 가져오기 (로그인 시 호출) */
     suspend fun syncWithServer(userId: String) {
         if (userId.isBlank()) return
         try {
-            val snapshot = firestore.collection("users").document(userId)
+            Log.d("SYNC", "서버 동기화 시작: $userId")
+
+            // 1. 루틴 데이터 동기화
+            val routineSnapshot = firestore.collection("users").document(userId)
                 .collection("routines").get().await()
 
-            for (doc in snapshot.documents) {
+            for (doc in routineSnapshot.documents) {
                 val routineDoc = doc.toObject(RoutineDocument::class.java) ?: continue
                 val routineEntity = RoutineEntity(
                     id = routineDoc.id,
@@ -169,14 +162,13 @@ class RoutineRepository @Inject constructor(
                     title = routineDoc.title,
                     createdAt = routineDoc.createdAt,
                     totalDuration = routineDoc.totalDuration,
-                    isActive = routineDoc.isActive
+                    isActive = routineDoc.active
                 )
                 routineDao.insertRoutine(routineEntity)
 
                 val stepSnapshot = doc.reference.collection("steps").get().await()
                 val stepEntities = stepSnapshot.documents.mapNotNull { stepDoc ->
-                    val step = stepDoc.toObject(StepDocument::class.java)
-                    step?.let {
+                    stepDoc.toObject(StepDocument::class.java)?.let {
                         StepEntity(
                             id = it.id,
                             routineId = routineEntity.id,
@@ -189,8 +181,44 @@ class RoutineRepository @Inject constructor(
                 }
                 stepDao.insertSteps(stepEntities)
             }
+
+            // 2. 예약 데이터 동기화
+            val resSnapshot = firestore.collection("users").document(userId)
+                .collection("reservations").get().await()
+
+            for (resDoc in resSnapshot.documents) {
+                val resData = resDoc.toObject(ReservationDocument::class.java) ?: continue
+                val resEntity = ReservationEntity(
+                    id = resData.id,
+                    userId = userId,
+                    routineId = resData.routineId,
+                    date = resData.date,
+                    startTime = resData.startTime,
+                    endTime = resData.endTime,
+                    routineTitle = resData.routineTitle
+                )
+                reservationDao.insertReservation(resEntity)
+            }
+
+            Log.d("SYNC", "서버 동기화 완료 (루틴 ${routineSnapshot.size()}, 예약 ${resSnapshot.size()})")
         } catch (e: Exception) {
             Log.e("RoutineRepository", "syncWithServer 실패", e)
+        }
+    }
+
+    suspend fun deleteRoutineById(routineId: Long) {
+        try {
+            val routine = getRoutineByIdOnce(routineId)
+            routineDao.deleteRoutineById(routine.id)
+            stepDao.deleteStepsByRoutineId(routine.id)
+
+            if (routine.userId.isNotBlank()) {
+                firestore.collection("users").document(routine.userId)
+                    .collection("routines").document(routine.id.toString())
+                    .delete().await()
+            }
+        } catch (e: Exception) {
+            Log.e("RoutineRepository", "삭제 실패", e)
         }
     }
 }

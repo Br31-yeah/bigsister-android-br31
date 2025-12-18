@@ -8,10 +8,10 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.smwu.bigsister.data.local.ReservationEntity
 import com.smwu.bigsister.data.local.RoutineEntity
-import com.smwu.bigsister.data.repository.ReservationRepository
 import com.smwu.bigsister.data.repository.RoutineRepository
 import com.smwu.bigsister.data.repository.StepRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,11 +26,9 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val routineRepository: RoutineRepository,
-    private val reservationRepository: ReservationRepository,
     private val stepRepository: StepRepository
 ) : ViewModel() {
 
-    // 👤 Firebase 사용자 정보
     private val _userName = MutableStateFlow(Firebase.auth.currentUser?.displayName ?: "사용자")
     val userName: StateFlow<String> = _userName.asStateFlow()
 
@@ -38,17 +36,14 @@ class HomeViewModel @Inject constructor(
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
     init {
-        // 초기화 시 프로필 정보를 다시 한 번 동기화
         refreshUserProfile()
     }
 
-    /** 프로필 정보를 최신화하여 displayName을 가져옴 */
     private fun refreshUserProfile() {
         viewModelScope.launch {
             try {
                 val user = Firebase.auth.currentUser
                 if (user != null) {
-                    // 서버로부터 최신 정보 강제 새로고침
                     user.reload().await()
                     _userName.value = user.displayName ?: "사용자"
                 }
@@ -62,10 +57,24 @@ class HomeViewModel @Inject constructor(
         _selectedDate.value = date
     }
 
+    fun saveReservation(reservation: ReservationEntity) {
+        viewModelScope.launch {
+            routineRepository.saveReservation(reservation)
+        }
+    }
+
+    fun deleteReservation(reservationId: Long) {
+        viewModelScope.launch {
+            routineRepository.deleteReservation(reservationId)
+        }
+    }
+
+    /** ✅ 핵심 수정: reservationRepository 대신 routineRepository를 통해 사용자 ID 필터링된 데이터 조회 */
+    @OptIn(ExperimentalCoroutinesApi::class)
     val todaySchedules: StateFlow<List<ReservationEntity>> =
         selectedDate
             .flatMapLatest { date ->
-                reservationRepository.getReservationsByDate(date.toString())
+                routineRepository.getReservationsByDate(date.toString())
             }
             .stateIn(
                 scope = viewModelScope,
