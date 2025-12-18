@@ -1,4 +1,4 @@
-package com.smwu.bigsister.ui.transit.components
+package com.smwu.bigsister.data.model.transit
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

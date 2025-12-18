@@ -28,6 +28,10 @@ class SettingsViewModel @Inject constructor(
     val intensity = settingsRepository.intensity.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "보통 - 표준 알림")
     val timing = settingsRepository.timing.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "마감 3분 전")
 
+    // ✅ 온보딩 상태 구독
+    val hasSeenOnboarding = settingsRepository.hasSeenOnboarding
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     init {
         // 앱 시작 시 혹은 로그인 후 서버 데이터와 동기화
         viewModelScope.launch { settingsRepository.syncFromFirebase() }
@@ -44,6 +48,13 @@ class SettingsViewModel @Inject constructor(
                 "timing" to timing.value
             )
             settingsRepository.uploadSettingsToFirebase(currentSettings)
+        }
+    }
+
+    // ✅ 온보딩 완료 처리
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            settingsRepository.saveOnboardingSeen(true)
         }
     }
 

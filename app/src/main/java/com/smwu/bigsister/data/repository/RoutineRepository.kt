@@ -121,7 +121,15 @@ class RoutineRepository @Inject constructor(
         return if (user != null) routineDao.getRoutinesWithStepsByUserId(user.uid) else emptyFlow()
     }
 
-    suspend fun getRoutineWithSteps(routineId: Long): RoutineWithSteps? = routineDao.getRoutineWithSteps(routineId)
+    // RoutineRepository.kt 예시
+
+    suspend fun getRoutineWithSteps(routineId: Long): RoutineWithSteps? {
+        val data = routineDao.getRoutineWithSteps(routineId)
+        // 🔥 가져온 데이터를 반환하기 전에 스텝을 정렬합니다.
+        return data?.copy(steps = data.steps.sortedBy { it.orderIndex })
+    }
+
+
     suspend fun getRoutineByIdOnce(id: Long): RoutineEntity = routineDao.getRoutineById(id).first() ?: throw IllegalStateException()
     suspend fun deleteRoutineById(routineId: Long) {
         val user = auth.currentUser ?: return

@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.maps.model.LatLng
-import com.smwu.bigsister.ui.transit.components.TransitRouteCard
+import com.smwu.bigsister.ui.components.transit.TransitRouteCard
 import com.smwu.bigsister.ui.viewModel.transit.TransitRouteUiState
 import com.smwu.bigsister.ui.viewModel.transit.TransitRouteViewModel
 import com.smwu.bigsister.ui.viewModel.transit.TransitStepDraft
@@ -130,6 +130,7 @@ fun TransitRouteScreen(
                         itemsIndexed(state.routes) { index, route ->
                             TransitRouteCard(
                                 route = route,
+                                isRecommended = index == 0, // ⭐ 첫 번째 경로를 추천으로 설정
                                 isSelected = selectedIndex == index,
                                 onClick = { viewModel.selectRoute(index) }
                             )
