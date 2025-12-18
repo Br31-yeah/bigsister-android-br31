@@ -25,7 +25,9 @@ import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -36,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,10 +68,12 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
 
-    // UI 상태 (실제 서비스에서는 viewModel의 StateFlow를 구독하는 것이 좋습니다)
-    var selectedType by remember { mutableStateOf("TSUNDERE") }
-    var pushEnabled by remember { mutableStateOf(true) }
-    var voiceEnabled by remember { mutableStateOf(false) }
+    // ✅ 모든 상태를 ViewModel로부터 구독 (remember 제거)
+    val sisterType by viewModel.sisterType.collectAsState()
+    val pushEnabled by viewModel.pushAlarm.collectAsState()
+    val voiceEnabled by viewModel.voiceAlarm.collectAsState()
+    val selectedIntensity by viewModel.intensity.collectAsState()
+    val selectedTiming by viewModel.timing.collectAsState()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -96,63 +101,73 @@ fun SettingsScreen(
         ) {
             Spacer(Modifier.height(8.dp))
 
-            // 1. 언니 타입 섹션 (미리보기 기능 통합)
             SectionContainer(title = "언니 타입") {
                 TypeOption(
                     title = "츤데레",
                     desc = "장난스럽고 약간 비꼬는 스타일",
-                    isSelected = selectedType == "TSUNDERE",
-                    onClick = { selectedType = "TSUNDERE" },
+                    isSelected = sisterType == "TSUNDERE",
+                    onClick = { viewModel.setSisterType("TSUNDERE") },
                     onPreview = { viewModel.previewVoice(VoiceType.TSUNDERE) }
                 )
                 Spacer(Modifier.height(12.dp))
                 TypeOption(
                     title = "현실적",
                     desc = "실용적이고 직설적인 스타일",
-                    isSelected = selectedType == "REALISTIC",
-                    onClick = { selectedType = "REALISTIC" },
+                    isSelected = sisterType == "REALISTIC",
+                    onClick = { viewModel.setSisterType("REALISTIC") },
                     onPreview = { viewModel.previewVoice(VoiceType.REALISTIC) }
                 )
                 Spacer(Modifier.height(12.dp))
                 TypeOption(
                     title = "AI",
                     desc = "데이터 기반 분석형",
-                    isSelected = selectedType == "AI",
-                    onClick = { selectedType = "AI" },
+                    isSelected = sisterType == "AI",
+                    onClick = { viewModel.setSisterType("AI") },
                     onPreview = { viewModel.previewVoice(VoiceType.AI) }
                 )
             }
 
-            // 2. 알림 섹션
             SectionContainer(title = "알림") {
-                SwitchRow(text = "푸시 알림", subText = "기기에서 알림 받기", checked = pushEnabled, onCheckedChange = { pushEnabled = it })
+                SwitchRow(text = "푸시 알림", subText = "기기에서 알림 받기", checked = pushEnabled, onCheckedChange = { viewModel.setPushAlarm(it) })
                 Spacer(Modifier.height(24.dp))
-                SwitchRow(text = "음성 알림", subText = "텍스트 음성 변환 리마인더", checked = voiceEnabled, onCheckedChange = { voiceEnabled = it })
+                SwitchRow(text = "음성 알림", subText = "텍스트 음성 변환 리마인더", checked = voiceEnabled, onCheckedChange = { viewModel.setVoiceAlarm(it) })
                 Spacer(Modifier.height(24.dp))
-                DropdownRow(label = "강도", value = "보통 - 표준 알림")
+
+                DropdownRow(
+                    label = "강도",
+                    value = selectedIntensity,
+                    options = listOf("약하게 - 조용한 가이드", "보통 - 표준 알림", "강하게 - 반복 독촉"),
+                    onOptionSelected = { viewModel.setIntensity(it) } // ✅ 즉시 저장
+                )
+
                 Spacer(Modifier.height(16.dp))
-                DropdownRow(label = "타이밍", value = "마감 3분 전")
+
+                DropdownRow(
+                    label = "타이밍",
+                    value = selectedTiming,
+                    options = listOf("마감 1분 전", "마감 3분 전", "마감 5분 전"),
+                    onOptionSelected = { viewModel.setTiming(it) } // ✅ 즉시 저장
+                )
             }
 
-            // 3. 정보 섹션
             SectionContainer(title = "정보") {
                 InfoRow(label = "버전", value = "1.0.0")
                 Spacer(Modifier.height(16.dp))
                 InfoRow(label = "빌드", value = "2025.10.29")
             }
 
-            // 4. 계정 섹션
             SectionContainer(title = "계정") {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
                         .clickable {
                             viewModel.logout {
                                 Toast.makeText(context, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
                                 onNavigateToLogin()
                             }
                         }
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -160,13 +175,14 @@ fun SettingsScreen(
                     Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = TextGray, modifier = Modifier.size(20.dp))
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
                         .clickable { showDeleteDialog = true }
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -224,9 +240,7 @@ fun SectionContainer(title: String, content: @Composable () -> Unit) {
             border = androidx.compose.foundation.BorderStroke(1.dp, GrayBg),
             elevation = CardDefaults.cardElevation(0.dp)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                content()
-            }
+            Column(modifier = Modifier.padding(20.dp)) { content() }
         }
     }
 }
@@ -237,7 +251,7 @@ fun TypeOption(
     desc: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    onPreview: () -> Unit // 미리듣기 콜백
+    onPreview: () -> Unit
 ) {
     val bgColor = if (isSelected) PurpleLight else GrayBg
     val borderColor = if (isSelected) PurplePrimary else Color.Transparent
@@ -259,7 +273,6 @@ fun TypeOption(
             Text(desc, fontSize = 14.sp, color = TextGray)
         }
 
-        // 미리듣기 스피커 아이콘
         IconButton(
             onClick = { onPreview() },
             modifier = Modifier.size(28.dp)
@@ -297,21 +310,58 @@ fun SwitchRow(text: String, subText: String, checked: Boolean, onCheckedChange: 
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropdownRow(label: String, value: String) {
+fun DropdownRow(
+    label: String,
+    value: String,
+    options: List<String>,
+    onOptionSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
     Column {
         Text(label, fontSize = 14.sp, color = TextGray, modifier = Modifier.padding(bottom = 8.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(GrayBg)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
         ) {
-            Text(value, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextGray, modifier = Modifier.size(20.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(GrayBg)
+                    .clickable { expanded = true }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(value, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = TextGray,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(Color.White)
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            onOptionSelected(option)
+                            expanded = false
+                        }
+                    )
+                }
+            }
         }
     }
 }

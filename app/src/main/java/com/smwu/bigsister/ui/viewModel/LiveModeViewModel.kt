@@ -50,20 +50,17 @@ class LiveModeViewModel @Inject constructor(
 
     private var timerJob: Job? = null
     private var allSteps: List<StepEntity> = emptyList()
+    private var routineId: Long = 0L // 클래스 레벨에서 관리
     private var routineStartTime: Long = 0L
     private var plannedTotalDurationMillis: Long = 0L
 
     private var currentVoiceType: VoiceType = VoiceType.TSUNDERE
     private var isVoiceEnabled: Boolean = false
 
-    // ✅ 에러 해결: NavType.LongType으로 전달된 경우 Long으로, 혹시 모를 Int 경우까지 대비해 안전하게 가져옵니다.
-    private val routineId: Long = savedStateHandle.get<Long>("routineId")
-        ?: savedStateHandle.get<Int>("routineId")?.toLong()
-        ?: 0L
-
     init {
-        // 설정 로드
+        // 1. 설정 및 ID 로드
         viewModelScope.launch {
+            // 사용자 설정 로드
             isVoiceEnabled = settingsRepository.voiceAlarm.first()
             val typeString = settingsRepository.sisterType.first()
             currentVoiceType = when (typeString) {
@@ -71,20 +68,24 @@ class LiveModeViewModel @Inject constructor(
                 "AI" -> VoiceType.AI
                 else -> VoiceType.TSUNDERE
             }
-        }
 
-        // 루틴 로드 시작
-        if (routineId != 0L) {
-            loadRoutine(routineId)
-        } else {
-            _uiState.update { it.copy(isLoading = false, isFinished = true) }
+            // ✅ 1번 브랜치의 안전한 ID 추출 로직 적용 (Long/Int 호환)
+            val extractedId = savedStateHandle.get<Long>("routineId")
+                ?: savedStateHandle.get<Int>("routineId")?.toLong()
+                ?: 0L
+
+            if (extractedId != 0L) {
+                loadRoutine(extractedId)
+            } else {
+                _uiState.update { it.copy(isLoading = false, isFinished = true) }
+            }
         }
     }
 
     private fun loadRoutine(id: Long) {
+        routineId = id
         routineStartTime = System.currentTimeMillis()
         viewModelScope.launch {
-            // routineRepository의 getRoutineWithSteps 호출
             val routineWithSteps = routineRepository.getRoutineWithSteps(id) ?: run {
                 _uiState.update { it.copy(isLoading = false, isFinished = true) }
                 return@launch
@@ -148,8 +149,10 @@ class LiveModeViewModel @Inject constructor(
                     }
                 } else {
                     val overtime = -remaining
-                    _uiState.update { it.copy(remainingTimeInMillis = 0, isOvertime = true, overtimeInMillis = overtime) }
-                    // 10초마다 독설/알람
+                    _uiState.update {
+                        it.copy(remainingTimeInMillis = 0, isOvertime = true, overtimeInMillis = overtime)
+                    }
+                    // 10초마다 독촉 멘트
                     if (overtime > 0 && overtime % 10000L == 0L) speakSister(SisterEvent.LATE)
                 }
             }
