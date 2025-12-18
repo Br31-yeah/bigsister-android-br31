@@ -31,7 +31,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +57,7 @@ fun HomeScreen(
 ) {
     val selectedDate by homeViewModel.selectedDate.collectAsState()
     val todaySchedules by homeViewModel.todaySchedules.collectAsState()
+    val userName by homeViewModel.userName.collectAsState()
 
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -65,35 +65,27 @@ fun HomeScreen(
         topBar = {
             HomeTopBar(
                 currentMonth = selectedDate.monthValue,
+                userName = userName,
                 onCalendarClick = { showDatePicker = true }
             )
         }
     ) { padding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 20.dp)
         ) {
-
             WeeklyCalendar(
                 selectedDate = selectedDate,
-                onDateSelected = homeViewModel::setSelectedDate
+                onDateSelected = { homeViewModel.setSelectedDate(it) }
             )
 
             Spacer(Modifier.height(24.dp))
 
-            /* ---------- 오늘 일정 (핵심 영역) ---------- */
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 if (todaySchedules.isEmpty()) {
-                    EmptyRoutineState {
-                        onNavigateToReservationAdd(selectedDate.toString())
-                    }
+                    EmptyRoutineState { onNavigateToReservationAdd(selectedDate.toString()) }
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -102,12 +94,8 @@ fun HomeScreen(
                         items(todaySchedules) { reservation ->
                             ReservationCard(
                                 reservation = reservation,
-                                onStart = {
-                                    // TODO: 즉시 시작 (LiveMode 연결 예정)
-                                },
-                                onCancel = {
-                                    reservationViewModel.deleteReservation(reservation.id)
-                                }
+                                onStart = { /* 시작 로직 */ },
+                                onCancel = { reservationViewModel.deleteReservation(reservation.id) }
                             )
                         }
                     }
@@ -116,66 +104,38 @@ fun HomeScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            /* ---------- 예약 추가 버튼 ---------- */
             Button(
-                onClick = {
-                    onNavigateToReservationAdd(selectedDate.toString())
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                onClick = { onNavigateToReservationAdd(selectedDate.toString()) },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MintConfirm,
-                    contentColor = Color.White
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = MintConfirm)
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "예약 추가",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("예약 추가", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
-
             Spacer(Modifier.height(24.dp))
         }
 
-        /* ---------- 날짜 선택 다이얼로그 ---------- */
         if (showDatePicker) {
             val datePickerState = rememberDatePickerState(
-                initialSelectedDateMillis = selectedDate
-                    .atStartOfDay(ZoneId.systemDefault())
-                    .toInstant()
-                    .toEpochMilli()
+                initialSelectedDateMillis = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             )
-
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            datePickerState.selectedDateMillis?.let { millis ->
-                                val newDate = Instant.ofEpochMilli(millis)
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                                homeViewModel.setSelectedDate(newDate)
-                            }
-                            showDatePicker = false
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val newDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                            homeViewModel.setSelectedDate(newDate)
                         }
-                    ) {
-                        Text("확인")
-                    }
+                        showDatePicker = false
+                    }) { Text("확인") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDatePicker = false }) {
-                        Text("취소")
-                    }
+                    TextButton(onClick = { showDatePicker = false }) { Text("취소") }
                 }
-            ) {
-                DatePicker(state = datePickerState)
-            }
+            ) { DatePicker(state = datePickerState) }
         }
     }
 }

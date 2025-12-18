@@ -11,8 +11,6 @@ interface ReservationDao {
 
     /* ────────────────────────────────
        예약 추가
-       ❗ REPLACE 절대 금지
-       autoGenerate PK + REPLACE = 덮어쓰기 발생
     ──────────────────────────────── */
     @Insert
     suspend fun insertReservation(reservation: ReservationEntity)
@@ -24,47 +22,44 @@ interface ReservationDao {
     suspend fun deleteReservationById(reservationId: Long)
 
     /* ────────────────────────────────
-       날짜별 예약 조회
-       ✔ 같은 루틴
-       ✔ 다른 시작 시간
-       ✔ 전부 반환됨
+       날짜별 예약 조회 ✅ [수정] userId 필터 추가
     ──────────────────────────────── */
     @Query("""
         SELECT *
         FROM reservation_table
-        WHERE date = :date
+        WHERE date = :date AND userId = :userId
         ORDER BY startTime ASC
     """)
-    fun getReservationsForDate(date: String): Flow<List<ReservationEntity>>
+    fun getReservationsForDate(date: String, userId: String): Flow<List<ReservationEntity>>
 
     /* ────────────────────────────────
-       월별 예약 조회 (Stats / Calendar 용)
-       ex) month = "2025-12"
+       월별 예약 조회 ✅ [수정] userId 필터 추가
     ──────────────────────────────── */
     @Query("""
         SELECT *
         FROM reservation_table
-        WHERE date LIKE :month || '%'
+        WHERE date LIKE :month || '%' AND userId = :userId
         ORDER BY date ASC, startTime ASC
     """)
-    fun getReservationsForMonth(month: String): Flow<List<ReservationEntity>>
+    fun getReservationsForMonth(month: String, userId: String): Flow<List<ReservationEntity>>
 
     /* ────────────────────────────────
-       기간 조회 (옵션)
+       기간 조회 ✅ [수정] userId 필터 추가
     ──────────────────────────────── */
     @Query("""
         SELECT *
         FROM reservation_table
-        WHERE date BETWEEN :startDate AND :endDate
+        WHERE (date BETWEEN :startDate AND :endDate) AND userId = :userId
         ORDER BY date ASC, startTime ASC
     """)
     fun getReservationsBetweenDates(
         startDate: String,
-        endDate: String
+        endDate: String,
+        userId: String
     ): Flow<List<ReservationEntity>>
 
     /* ────────────────────────────────
-       단일 예약 조회 (알람 취소용)
+       단일 예약 조회
     ──────────────────────────────── */
     @Query("""
         SELECT *

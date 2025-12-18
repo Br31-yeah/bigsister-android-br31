@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.smwu.bigsister.data.local.ReservationEntity
 import com.smwu.bigsister.data.local.RoutineWithSteps
 import com.smwu.bigsister.ui.viewModel.ReservationViewModel
@@ -193,8 +195,10 @@ fun ReservationAddScreen(
                                     ?: SimpleDateFormat("yyyy-MM-dd", Locale.KOREA)
                                         .format(Date())
 
+                                // ✅ [수정 완료] ReservationEntity 생성 시 userId 파라미터를 추가했습니다.
                                 reservationViewModel.addReservation(
                                     reservation = ReservationEntity(
+                                        userId = Firebase.auth.currentUser?.uid ?: "",
                                         routineId = routineItem.routine.id,
                                         date = dateToAdd,
                                         startTime = "%02d:%02d".format(selectedHour, selectedMinute),

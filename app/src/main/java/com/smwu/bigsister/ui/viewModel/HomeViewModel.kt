@@ -4,6 +4,8 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.smwu.bigsister.data.local.ReservationEntity
 import com.smwu.bigsister.data.local.RoutineEntity
 import com.smwu.bigsister.data.repository.ReservationRepository
@@ -16,6 +18,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -26,23 +30,37 @@ class HomeViewModel @Inject constructor(
     private val stepRepository: StepRepository
 ) : ViewModel() {
 
-    /* ────────────────────────────────
-       📅 선택된 날짜
-    ──────────────────────────────── */
+    // 👤 Firebase 사용자 정보
+    private val _userName = MutableStateFlow(Firebase.auth.currentUser?.displayName ?: "사용자")
+    val userName: StateFlow<String> = _userName.asStateFlow()
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
+    init {
+        // 초기화 시 프로필 정보를 다시 한 번 동기화
+        refreshUserProfile()
+    }
+
+    /** 프로필 정보를 최신화하여 displayName을 가져옴 */
+    private fun refreshUserProfile() {
+        viewModelScope.launch {
+            try {
+                val user = Firebase.auth.currentUser
+                if (user != null) {
+                    // 서버로부터 최신 정보 강제 새로고침
+                    user.reload().await()
+                    _userName.value = user.displayName ?: "사용자"
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun setSelectedDate(date: LocalDate) {
         _selectedDate.value = date
     }
-
-    /* ────────────────────────────────
-       📋 오늘 예약된 루틴 목록 (핵심)
-       ✔ 같은 루틴
-       ✔ 다른 시작 시간
-       ✔ 전부 표시됨
-    ──────────────────────────────── */
 
     val todaySchedules: StateFlow<List<ReservationEntity>> =
         selectedDate
@@ -55,10 +73,6 @@ class HomeViewModel @Inject constructor(
                 initialValue = emptyList()
             )
 
-    /* ────────────────────────────────
-       📦 루틴 목록
-    ──────────────────────────────── */
-
     val routines: StateFlow<List<RoutineEntity>> =
         routineRepository.getAllRoutines()
             .stateIn(
@@ -67,17 +81,9 @@ class HomeViewModel @Inject constructor(
                 initialValue = emptyList()
             )
 
-    /* ────────────────────────────────
-       ⏱ 루틴 총 소요 시간
-    ──────────────────────────────── */
-
     suspend fun calculateTotalDuration(routineId: Long): Long {
         return stepRepository.calculateTotalDurationOnce(routineId)
     }
-
-    /* ────────────────────────────────
-       UI 유틸
-    ──────────────────────────────── */
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getWeekDates(date: LocalDate): List<LocalDate> {
