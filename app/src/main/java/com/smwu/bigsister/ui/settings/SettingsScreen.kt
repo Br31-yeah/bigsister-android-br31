@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.smwu.bigsister.data.model.VoiceType
 import com.smwu.bigsister.ui.theme.GrayBg
 import com.smwu.bigsister.ui.theme.PurpleLight
 import com.smwu.bigsister.ui.theme.PurplePrimary
@@ -58,17 +60,16 @@ import com.smwu.bigsister.ui.viewModel.SettingsViewModel
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToLogin: () -> Unit, // ✅ 추가됨: 로그아웃 시 이동
-    viewModel: SettingsViewModel = hiltViewModel() // ✅ 추가됨: 기능 연결
+    onNavigateToLogin: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
 
-    // UI 상태 (기존 코드 유지)
+    // UI 상태 (실제 서비스에서는 viewModel의 StateFlow를 구독하는 것이 좋습니다)
     var selectedType by remember { mutableStateOf("TSUNDERE") }
     var pushEnabled by remember { mutableStateOf(true) }
     var voiceEnabled by remember { mutableStateOf(false) }
 
-    // ✅ 추가됨: 회원탈퇴 다이얼로그 상태
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -90,36 +91,39 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState()), // 스크롤 가능하게
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Spacer(Modifier.height(8.dp))
 
-            // 1. 언니 타입 섹션 (기존 유지)
+            // 1. 언니 타입 섹션 (미리보기 기능 통합)
             SectionContainer(title = "언니 타입") {
                 TypeOption(
                     title = "츤데레",
                     desc = "장난스럽고 약간 비꼬는 스타일",
                     isSelected = selectedType == "TSUNDERE",
-                    onClick = { selectedType = "TSUNDERE" }
+                    onClick = { selectedType = "TSUNDERE" },
+                    onPreview = { viewModel.previewVoice(VoiceType.TSUNDERE) }
                 )
                 Spacer(Modifier.height(12.dp))
                 TypeOption(
                     title = "현실적",
                     desc = "실용적이고 직설적인 스타일",
                     isSelected = selectedType == "REALISTIC",
-                    onClick = { selectedType = "REALISTIC" }
+                    onClick = { selectedType = "REALISTIC" },
+                    onPreview = { viewModel.previewVoice(VoiceType.REALISTIC) }
                 )
                 Spacer(Modifier.height(12.dp))
                 TypeOption(
                     title = "AI",
                     desc = "데이터 기반 분석형",
                     isSelected = selectedType == "AI",
-                    onClick = { selectedType = "AI" }
+                    onClick = { selectedType = "AI" },
+                    onPreview = { viewModel.previewVoice(VoiceType.AI) }
                 )
             }
 
-            // 2. 알림 섹션 (기존 유지)
+            // 2. 알림 섹션
             SectionContainer(title = "알림") {
                 SwitchRow(text = "푸시 알림", subText = "기기에서 알림 받기", checked = pushEnabled, onCheckedChange = { pushEnabled = it })
                 Spacer(Modifier.height(24.dp))
@@ -130,18 +134,15 @@ fun SettingsScreen(
                 DropdownRow(label = "타이밍", value = "마감 3분 전")
             }
 
-            // 3. 정보 섹션 (기존 유지)
+            // 3. 정보 섹션
             SectionContainer(title = "정보") {
                 InfoRow(label = "버전", value = "1.0.0")
                 Spacer(Modifier.height(16.dp))
                 InfoRow(label = "빌드", value = "2025.10.29")
             }
 
-            // ──────────────────────────────────────────────
-            // ✅ 4. 계정 섹션 (추가됨)
-            // ──────────────────────────────────────────────
+            // 4. 계정 섹션
             SectionContainer(title = "계정") {
-                // 로그아웃
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -161,7 +162,6 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // 회원탈퇴
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -175,11 +175,10 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(Modifier.height(40.dp)) // 하단 여백
+            Spacer(Modifier.height(40.dp))
         }
     }
 
-    // ✅ 회원탈퇴 확인 다이얼로그
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -213,7 +212,6 @@ fun SettingsScreen(
     }
 }
 
-// [컴포넌트] 섹션 컨테이너 (기존 유지)
 @Composable
 fun SectionContainer(title: String, content: @Composable () -> Unit) {
     Column {
@@ -222,8 +220,8 @@ fun SectionContainer(title: String, content: @Composable () -> Unit) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White), // 배경 흰색
-            border = androidx.compose.foundation.BorderStroke(1.dp, GrayBg), // 연한 테두리
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = androidx.compose.foundation.BorderStroke(1.dp, GrayBg),
             elevation = CardDefaults.cardElevation(0.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
@@ -233,9 +231,14 @@ fun SectionContainer(title: String, content: @Composable () -> Unit) {
     }
 }
 
-// [컴포넌트] 언니 타입 선택 버튼 (기존 유지)
 @Composable
-fun TypeOption(title: String, desc: String, isSelected: Boolean, onClick: () -> Unit) {
+fun TypeOption(
+    title: String,
+    desc: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onPreview: () -> Unit // 미리듣기 콜백
+) {
     val bgColor = if (isSelected) PurpleLight else GrayBg
     val borderColor = if (isSelected) PurplePrimary else Color.Transparent
 
@@ -247,17 +250,29 @@ fun TypeOption(title: String, desc: String, isSelected: Boolean, onClick: () -> 
             .border(1.dp, borderColor, RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
             Spacer(Modifier.height(4.dp))
             Text(desc, fontSize = 14.sp, color = TextGray)
         }
+
+        // 미리듣기 스피커 아이콘
+        IconButton(
+            onClick = { onPreview() },
+            modifier = Modifier.size(28.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.VolumeUp,
+                contentDescription = "미리듣기",
+                tint = if (isSelected) PurplePrimary else TextGray
+            )
+        }
     }
 }
 
-// [컴포넌트] 스위치 행 (기존 유지)
 @Composable
 fun SwitchRow(text: String, subText: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
@@ -274,7 +289,7 @@ fun SwitchRow(text: String, subText: String, checked: Boolean, onCheckedChange: 
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Color.Black, // Figma: 검정색 활성화
+                checkedTrackColor = Color.Black,
                 uncheckedThumbColor = Color.White,
                 uncheckedTrackColor = Color.LightGray
             )
@@ -282,7 +297,6 @@ fun SwitchRow(text: String, subText: String, checked: Boolean, onCheckedChange: 
     }
 }
 
-// [컴포넌트] 드롭다운 모양 행 (기존 유지)
 @Composable
 fun DropdownRow(label: String, value: String) {
     Column {
@@ -302,7 +316,6 @@ fun DropdownRow(label: String, value: String) {
     }
 }
 
-// [컴포넌트] 정보 행 (기존 유지)
 @Composable
 fun InfoRow(label: String, value: String) {
     Row(

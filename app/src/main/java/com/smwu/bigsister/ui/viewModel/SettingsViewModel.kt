@@ -1,10 +1,13 @@
+
 package com.smwu.bigsister.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smwu.bigsister.data.model.VoiceType
 import com.smwu.bigsister.data.repository.RoutineRepository
 import com.smwu.bigsister.data.repository.SettingsRepository
 import com.smwu.bigsister.data.repository.UserRepository
+import com.smwu.bigsister.utils.TtsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,15 +18,16 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val userRepository: UserRepository,      // ✅ 추가됨
-    private val routineRepository: RoutineRepository // ✅ 추가됨
+    private val userRepository: UserRepository,
+    private val routineRepository: RoutineRepository,
+    private val ttsManager: TtsManager // ✅ TTS 매니저 추가 주입
 ) : ViewModel() {
 
     // ────────────────────────────
     // 기존 설정 (DataStore)
     // ────────────────────────────
     val sisterType: StateFlow<String> = settingsRepository.sisterType
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "츤데레")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "TSUNDERE")
 
     val pushAlarm: StateFlow<Boolean> = settingsRepository.pushAlarm
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -44,30 +48,36 @@ class SettingsViewModel @Inject constructor(
     }
 
     // ────────────────────────────
-    // ✅ [추가] 로그아웃 및 회원탈퇴
+    // 🔊 [추가] 미리듣기 기능
+    // ────────────────────────────
+    fun previewVoice(voiceType: VoiceType) {
+        val previewMessage = when (voiceType) {
+            VoiceType.TSUNDERE -> "뭐야? 나랑 같이 가고 싶은 거야? 흥, 딱히 널 기다린 건 아니니까 착각하지 마!"
+            VoiceType.REALISTIC -> "안녕? 오늘도 지각 안 하려고 노력 중이지? 언니가 확실히 챙겨줄게. 빨리 가자!"
+            VoiceType.AI -> "시스템 활성화. 사용자님, 효율적인 루틴 수행을 위해 제가 최적의 가이드를 제공하겠습니다."
+        }
+        ttsManager.speak(previewMessage, voiceType)
+    }
+
+    // ────────────────────────────
+    // 로그아웃 및 회원탈퇴
     // ────────────────────────────
 
-    // 로그아웃: Firebase signOut + 로컬 데이터 삭제
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
-            userRepository.signOut() // Auth 로그아웃 & 유저 정보 삭제
-            routineRepository.clearAllLocalData() // 루틴 데이터 삭제
+            userRepository.signOut()
+            routineRepository.clearAllLocalData()
             onComplete()
         }
     }
 
-    // 회원탈퇴: Firebase 계정 삭제 + 로컬 데이터 삭제
     fun deleteAccount(onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            // 1. 계정 삭제 시도
             val result = userRepository.deleteAccount()
-
             result.onSuccess {
-                // 2. 성공 시 로컬 루틴 데이터도 삭제
                 routineRepository.clearAllLocalData()
                 onSuccess()
             }.onFailure { e ->
-                // 실패 시 (예: 재로그인 필요)
                 onError("회원탈퇴 실패: ${e.message}")
             }
         }
