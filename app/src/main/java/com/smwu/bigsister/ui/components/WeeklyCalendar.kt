@@ -1,4 +1,4 @@
-package com.smwu.bigsister.ui.component
+package com.smwu.bigsister.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

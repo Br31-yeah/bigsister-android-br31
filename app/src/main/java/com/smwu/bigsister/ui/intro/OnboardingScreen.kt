@@ -29,11 +29,12 @@ import com.smwu.bigsister.ui.theme.PurpleLight
 import com.smwu.bigsister.ui.theme.PurplePrimary
 
 // 온보딩 전체 흐름을 관리하는 화면
+// com/smwu/bigsister/ui/intro/OnboardingFlow.kt
+
 @Composable
 fun OnboardingFlow(
-    onComplete: () -> Unit // 모든 설정 끝나면 홈으로 이동
+    onComplete: () -> Unit // RootNavigation에서 전달된 람다
 ) {
-    // 현재 단계 (0: 시작화면, 1: 타입선택, 2: 알림설정)
     var currentStep by remember { mutableStateOf(0) }
     var selectedType by remember { mutableStateOf("TSUNDERE") }
 
@@ -45,7 +46,7 @@ fun OnboardingFlow(
                 currentStep = 2
             }
         )
-        2 -> NotificationScreen(onNext = onComplete)
+        2 -> NotificationScreen(onNext = onComplete) // ✅ 여기서 onComplete 실행
     }
 }
 
