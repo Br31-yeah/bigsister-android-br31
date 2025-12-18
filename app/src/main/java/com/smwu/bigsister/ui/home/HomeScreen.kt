@@ -61,6 +61,9 @@ fun HomeScreen(
 
     var showDatePicker by remember { mutableStateOf(false) }
 
+    // [중요] 한국 시간대 설정
+    val koreaZoneId = ZoneId.of("Asia/Seoul")
+
     Scaffold(
         topBar = {
             HomeTopBar(
@@ -118,15 +121,19 @@ fun HomeScreen(
         }
 
         if (showDatePicker) {
+            // [수정] systemDefault() -> koreaZoneId ("Asia/Seoul")
+            // 이제 달력 팝업도 한국 시간을 기준으로 열립니다.
             val datePickerState = rememberDatePickerState(
-                initialSelectedDateMillis = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                initialSelectedDateMillis = selectedDate.atStartOfDay(koreaZoneId).toInstant().toEpochMilli()
             )
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
                 confirmButton = {
                     TextButton(onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            val newDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                            // [수정] systemDefault() -> koreaZoneId
+                            // 선택한 날짜를 한국 시간으로 변환해서 저장
+                            val newDate = Instant.ofEpochMilli(millis).atZone(koreaZoneId).toLocalDate()
                             homeViewModel.setSelectedDate(newDate)
                         }
                         showDatePicker = false

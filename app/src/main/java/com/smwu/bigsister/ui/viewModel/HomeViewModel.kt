@@ -1,5 +1,4 @@
 package com.smwu.bigsister.ui.viewModel
-
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
@@ -21,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
+import java.time.ZoneId
 import javax.inject.Inject
 
 @HiltViewModel
@@ -32,7 +32,9 @@ class HomeViewModel @Inject constructor(
     private val _userName = MutableStateFlow(Firebase.auth.currentUser?.displayName ?: "사용자")
     val userName: StateFlow<String> = _userName.asStateFlow()
 
-    private val _selectedDate = MutableStateFlow(LocalDate.now())
+
+    // 한국 시간대 로직 반영
+    private val _selectedDate = MutableStateFlow(LocalDate.now(ZoneId.of("Asia/Seoul")))
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
     init {
