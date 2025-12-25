@@ -1,0 +1,4 @@
+# 실제 빌드를 위해 이 파일의 복사본을 만들어 'local.properties'로 이름을 바꾸고 본인의 키를 입력하세요.
+GOOGLE_MAPS_API_KEY=YOUR_KEY_HERE
+ODSAY_API_KEY=YOUR_KEY_HERE
+ROUTES_API_KEY=YOUR_KEY_HERE

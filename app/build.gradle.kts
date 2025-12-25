@@ -37,6 +37,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // 🔹 Firebase 내부에서 사용하는 google_api_key 리소스 주입
+        // 이렇게 하면 google-services.json의 키를 비워둬도 앱이 작동합니다.
+        resValue("string", "google_api_key", googleKey)
+
         // 🔹 BuildConfig에 API 키 주입 (코드에서 BuildConfig.XXX로 사용)
         buildConfigField("String", "ODSAY_API_KEY", "\"$odsayKey\"")
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$googleKey\"")

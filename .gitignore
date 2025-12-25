@@ -5,3 +5,5 @@
 /.idea/
 /captures/
 local.properties
+# 기존 목록 하단에 추가
+google-services.json
